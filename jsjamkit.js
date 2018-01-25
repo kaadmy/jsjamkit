@@ -34,19 +34,38 @@
 
 var jsjk = {};
 
-// COnstants
+// Constants
 
 jsjk.FILTER_LINEAR = 0;
 jsjk.FILTER_NEAREST = 1;
 
 jsjk.HANDLED = 1;
 
-jsjk.LEFT = 37;
-jsjk.UP = 38;
-jsjk.RIGHT = 39;
-jsjk.DOWN = 40;
+jsjk.KEY_LEFT = 37;
+jsjk.KEY_UP = 38;
+jsjk.KEY_RIGHT = 39;
+jsjk.KEY_DOWN = 40;
 
-// Callbacks
+jsjk.MOUSE_LEFT = 0;
+jsjk.MOUSE_MIDDLE = 0;
+jsjk.MOUSE_RIGHT = 0;
+
+jsjk.AXIS_X = 0;
+jsjk.AXIS_Y = 1;
+
+// Utility functions
+
+jsjk.vectorToString = function(vec) {
+    return "(" + vec[jsjk.AXIS_X] + ":" + vec[jsjk.AXIS_Y] + ")";
+};
+
+jsjk.printDebug = function(string) {
+    if (jsjk._enableDebug) {
+        console.debug(string);
+    }
+};
+
+// Default callbacks
 
 jsjk.init = function() {};
 jsjk.tick = function(delta) {};
@@ -54,18 +73,19 @@ jsjk.keyPress = function(code, name) {};
 jsjk.keyRelease = function(code, name) {};
 jsjk.mousePress = function(button, pos) {};
 jsjk.mouseRelease = function(button, pos) {};
-jsjk.mouseMove = function(pos, rel) {};
+jsjk.mouseMove = function(pos) {};
 
 jsjk._init = function() {
     // Init
 
     jsjk._startTime = jsjk._getTime();
+    jsjk._lastFrame = jsjk._getTime();
 
     jsjk.init();
 
     // Tick
 
-    if (jsjk._frameRate == undefined) {
+    if (jsjk._frameRate === undefined) {
         jsjk.frameRate(60); // Default framerate if jsjk.init doesn't set it
     }
 };
@@ -79,11 +99,49 @@ jsjk._tick = function() {
 };
 
 jsjk._keyPress = function(event) {
-    return ((jsjk.keyPress(event.keyCode, event.key) == jsjk.HANDLED) ? false : true);
+    jsjk.printDebug("Key press: " + event.which + ", " + event.key);
+
+    if (jsjk.keyPress(event.which, event.key) === jsjk.HANDLED) {
+        event.preventDefault();
+    }
 };
 
 jsjk._keyRelease = function(event) {
-    return ((jsjk.keyRelease(event.keyCode, event.key) == jsjk.HANDLED) ? false : true);
+    jsjk.printDebug("Key release: " + event.which + ", " + event.key);
+
+    if (jsjk.keyRelease(event.which, event.key) === jsjk.HANDLED) {
+        event.preventDefault();
+    }
+};
+
+jsjk._mousePress = function(event) {
+    var pos = [event.pageX, event.pageY];
+
+    jsjk.printDebug("Mouse press: " + event.which + ", " + jsjk.vectorToString(pos));
+
+    if (jsjk.mousePress(event.which, pos) === jsjk.HANDLED) {
+        event.preventDefault();
+    }
+};
+
+jsjk._mouseRelease = function(event) {
+    var pos = [event.pageX, event.pageY];
+
+    jsjk.printDebug("Mouse release: " + event.which + ", " + jsjk.vectorToString(pos));
+
+    if (jsjk.mouseRelease(event.which, pos) === jsjk.HANDLED) {
+        event.preventDefault();
+    }
+};
+
+jsjk._mouseMove = function(event) {
+    var pos = [event.pageX, event.pageY];
+
+    jsjk.printDebug("Mouse move: " + jsjk.vectorToString(pos));
+
+    if (jsjk.mouseMove(pos) === jsjk.HANDLED) {
+        event.preventDefault();
+    }
 };
 
 // Timing
@@ -121,7 +179,7 @@ jsjk.Canvas = function(width, height) {
 };
 
 jsjk.Canvas.prototype.setFilter = function(filter) {
-    if (filter == jsjk.FILTER_LINEAR) {
+    if (filter === jsjk.FILTER_LINEAR) {
     } else {
     }
 }

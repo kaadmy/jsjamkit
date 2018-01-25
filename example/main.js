@@ -1,5 +1,8 @@
 with (jsjk) {
     init = function() {
+        jsjk._enableDebug = true;
+
+        frameRate(10);
     };
 
     tick = function(delta) {
@@ -9,5 +12,14 @@ with (jsjk) {
     };
 
     keyRelease = function(code, name) {
+    };
+
+    mousePress = function(button, pos) {
+    };
+
+    mouseRelease = function(button, pos) {
+    };
+
+    mouseMove = function(pos) {
     };
 }
