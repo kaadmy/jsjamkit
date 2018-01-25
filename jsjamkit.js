@@ -30,57 +30,107 @@
  *
  */
 
-/* Global namespaces */
+// Namespace
 
-var jsjk = {} // Public API
-var _jsjk = {} // Internal API
+var jsjk = {};
 
-/* Exposed API */
+// COnstants
 
-jsjk.options = {};
-jsjk.options.frameRate = 60;
+jsjk.FILTER_LINEAR = 0;
+jsjk.FILTER_NEAREST = 1;
 
-jsjk.callbacks = {};
-jsjk.callbacks.init = function() {};
-jsjk.callbacks.tick = function(delta) {};
-jsjk.callbacks.keyPress = function(key) {};
-jsjk.callbacks.keyRelease = function(key) {};
-jsjk.callbacks.mousePress = function(button, pos) {};
-jsjk.callbacks.mouseRelease = function(button, pos) {};
-jsjk.callbacks.mouseMotion = function(pos, rel) {};
+jsjk.HANDLED = 1;
 
-jsjk.delta = 0;
+jsjk.LEFT = 37;
+jsjk.UP = 38;
+jsjk.RIGHT = 39;
+jsjk.DOWN = 40;
 
-jsjk.getElapsedTime = function() {
-    return _jsjk.getTime() - _jsjk.time.start;
+// Callbacks
+
+jsjk.init = function() {};
+jsjk.tick = function(delta) {};
+jsjk.keyPress = function(code, name) {};
+jsjk.keyRelease = function(code, name) {};
+jsjk.mousePress = function(button, pos) {};
+jsjk.mouseRelease = function(button, pos) {};
+jsjk.mouseMove = function(pos, rel) {};
+
+jsjk._init = function() {
+    // Init
+
+    jsjk._startTime = jsjk._getTime();
+
+    jsjk.init();
+
+    // Tick
+
+    if (jsjk._frameRate == undefined) {
+        jsjk.frameRate(60); // Default framerate if jsjk.init doesn't set it
+    }
 };
 
-jsjk.Canvas = function() {
-};
+jsjk._tick = function() {
+    var delta = jsjk._getTime() - jsjk._lastFrame;
 
-/* Internal API; don't touch this */
-
-_jsjk.time = {}
-_jsjk.time.start = 0;
-_jsjk.time.lastFrame = 0;
-
-_jsjk.getTime = function() {
-    return new Date().getTime() / 1000;
-};
-
-_jsjk.init = function() {
-    _jsjk.time.start = _jsjk.getTime();
-
-    jsjk.callbacks.init();
-
-    setInterval(_jsjk.tick, 1000 / jsjk.options.frameRate);
-};
-
-_jsjk.tick = function() {
-    var time = new Date().getTime() / 1000;
-
-    jsjk.time.delta = time - _jsjk.time.lastFrame;
-    _jsjk.time.lastFrame = jsjk.getElapsedTime();
+    jsjk._lastFrame = jsjk._getTime();
 
     jsjk.tick(delta);
 };
+
+jsjk._keyPress = function(event) {
+    return ((jsjk.keyPress(event.keyCode, event.key) == jsjk.HANDLED) ? false : true);
+};
+
+jsjk._keyRelease = function(event) {
+    return ((jsjk.keyRelease(event.keyCode, event.key) == jsjk.HANDLED) ? false : true);
+};
+
+// Timing
+
+jsjk._getTime = function() {
+    return new Date().getTime() / 1000;
+};
+
+jsjk.getElapsedTime = function() {
+    return jsjk._getTime() - jsjk._startTime;
+};
+
+jsjk.frameRate = function(frameRate) {
+    if (frameRate) {
+        jsjk._frameRate = frameRate;
+
+        if (jsjk._tickInterval) {
+            clearInterval(jsjk._tickInterval);
+        }
+
+        jsjk._tickInterval = setInterval(jsjk._tick, 1000 / jsjk._frameRate);
+    }
+
+    return jsjk._frameRate;
+};
+
+// Canvas
+
+jsjk.Canvas = function(width, height) {
+    this.width = width;
+    this.height = height;
+
+    this.element = null;
+    this.context = null;
+};
+
+jsjk.Canvas.prototype.setFilter = function(filter) {
+    if (filter == jsjk.FILTER_LINEAR) {
+    } else {
+    }
+}
+
+// Assign internal callbacks
+
+window.onload = jsjk._init;
+window.onkeydown = jsjk._keyPress;
+window.onkeyup = jsjk._keyRelease;
+window.onmousedown = jsjk._mousePress;
+window.onmouseup = jsjk._mouseRelease;
+window.onmousemove = jsjk._mouseMove;
