@@ -117,7 +117,7 @@ jsjk._keyRelease = function(event) {
 jsjk._mousePress = function(event) {
     var pos = [event.pageX, event.pageY];
 
-    jsjk.printDebug("Mouse press: " + event.which + ", " + jsjk.vectorToString(pos));
+    jsjk.printDebug("Mouse press: " + event.which + ", " + jsjk.stringifyVector(pos));
 
     if (jsjk.mousePress(event.which, pos) === jsjk.HANDLED) {
         event.preventDefault();
@@ -127,7 +127,7 @@ jsjk._mousePress = function(event) {
 jsjk._mouseRelease = function(event) {
     var pos = [event.pageX, event.pageY];
 
-    jsjk.printDebug("Mouse release: " + event.which + ", " + jsjk.vectorToString(pos));
+    jsjk.printDebug("Mouse release: " + event.which + ", " + jsjk.stringifyVector(pos));
 
     if (jsjk.mouseRelease(event.which, pos) === jsjk.HANDLED) {
         event.preventDefault();
@@ -137,7 +137,7 @@ jsjk._mouseRelease = function(event) {
 jsjk._mouseMove = function(event) {
     var pos = [event.pageX, event.pageY];
 
-    jsjk.printDebug("Mouse move: " + jsjk.vectorToString(pos));
+    jsjk.printDebug("Mouse move: " + jsjk.stringifyVector(pos));
 
     if (jsjk.mouseMove(pos) === jsjk.HANDLED) {
         event.preventDefault();
