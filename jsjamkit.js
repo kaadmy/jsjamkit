@@ -55,8 +55,8 @@ jsjk.AXIS_Y = 1;
 
 // Utility functions
 
-jsjk.vectorToString = function(vec) {
-    return "(" + vec[jsjk.AXIS_X] + ":" + vec[jsjk.AXIS_Y] + ")";
+jsjk.stringifyVector = function(vec) {
+    return "[" + vec[jsjk.AXIS_X] + ":" + vec[jsjk.AXIS_Y] + "]";
 };
 
 jsjk.printDebug = function(string) {
