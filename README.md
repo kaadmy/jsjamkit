@@ -3,10 +3,6 @@
 
 A small and concise Javascript toolkit for rapid game development.
 
-## API
-
-See file *API.md* for more information.
-
 ## License
 
 See file *LICENSE.txt* for more information.
