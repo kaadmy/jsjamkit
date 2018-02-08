@@ -1,6 +1,6 @@
 with (jsjk) {
     init = function() {
-        jsjk._enableDebug = true;
+        _enableDebug = true;
 
         frameRate(10);
     };

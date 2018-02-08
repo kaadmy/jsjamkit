@@ -47,20 +47,20 @@ jsjk.KEY_RIGHT = 39;
 jsjk.KEY_DOWN = 40;
 
 jsjk.MOUSE_LEFT = 0;
-jsjk.MOUSE_MIDDLE = 0;
-jsjk.MOUSE_RIGHT = 0;
+jsjk.MOUSE_MIDDLE = 1;
+jsjk.MOUSE_RIGHT = 2;
 
 jsjk.AXIS_X = 0;
 jsjk.AXIS_Y = 1;
 
 // Utility functions
 
-jsjk.stringifyVector = function(vec) {
+jsjk.stringifyVector = function(vec) { // ??? Should we support arbitrary length vectors?
     return "[" + vec[jsjk.AXIS_X] + ":" + vec[jsjk.AXIS_Y] + "]";
 };
 
 jsjk.printDebug = function(string) {
-    if (jsjk._enableDebug) {
+    if (jsjk._enableDebug) { // Variable doesn't exist by default; create it to enable debugging
         console.debug(string);
     }
 };
@@ -154,9 +154,9 @@ jsjk.getElapsedTime = function() {
     return jsjk._getTime() - jsjk._startTime;
 };
 
-jsjk.frameRate = function(frameRate) {
-    if (frameRate) {
-        jsjk._frameRate = frameRate;
+jsjk.frameRate = function(fr) {
+    if (fr) {
+        jsjk._frameRate = fr;
 
         if (jsjk._tickInterval) {
             clearInterval(jsjk._tickInterval);
