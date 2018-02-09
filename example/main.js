@@ -25,7 +25,7 @@ with (jsjk) {
 
     canvas.drawLine(10, 10, 120, 80 + (Math.sin(getTime() * 2) * 20));
 
-    canvas.setFill(100, 100, 100, 0.5);
+    canvas.setFill(50, 50, 50, 0.8);
 
     canvas.drawCircle(50, 50, 40);
 
