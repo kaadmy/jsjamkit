@@ -13,7 +13,7 @@ with (jsjk) {
 
     canvas.setBackground(20, 20, 20);
 
-    asset = new Asset(ASSET_IMAGE, "images/cat.png"); // This will be moved into an AssetLoader
+    asset = new Asset(ASSET_IMAGE, "images/baboon.png"); // This will be moved into an AssetLoader
   };
 
   tick = function(delta) {
@@ -24,13 +24,20 @@ with (jsjk) {
 
     canvas.adjustViewport(true, true, true, true);
 
-    // Draw image
-
-    canvas.drawImage(asset.get(), 50, 100);
-
     // Clear canvas
 
     canvas.clear();
+
+    // Draw image
+
+    canvas.pushMatrix();
+
+    canvas.translate(100, 20);
+    canvas.rotate(Math.PI * 0.2);
+
+    canvas.drawImage(asset.get(), 0, 0, 100, 100);
+
+    canvas.popMatrix();
 
     // Line
 
@@ -46,7 +53,7 @@ with (jsjk) {
 
     // Rect
 
-    canvas.drawRect(150, 80, 100, 80);
+    canvas.drawRect(130, 80, 130, 100);
   };
 
   keyPress = function(code, name) {

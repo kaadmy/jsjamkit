@@ -284,12 +284,6 @@ jsjk.Asset = Class.extend({
     jsjk._cache.assetsElem.appendChild(this.element);
 
     this.element.src = this.path;
-
-    console.log(this.element);
-
-    this.element.onload = function() {
-      console.warn(this);
-    };
   },
 
   cacheSound: function() {
