@@ -36,9 +36,6 @@ var jsjk = {};
 
 // Constants
 
-jsjk.FILTER_LINEAR = 0;
-jsjk.FILTER_NEAREST = 1;
-
 jsjk.HANDLED = 1;
 
 jsjk.KEY_LEFT = 37;
@@ -56,19 +53,28 @@ jsjk.AXIS_Y = 1;
 // Utility functions
 
 jsjk.stringifyVector = function(vec) { // ??? Should we support arbitrary length vectors?
-    return "[" + vec[jsjk.AXIS_X] + ":" + vec[jsjk.AXIS_Y] + "]";
+  return "[" + vec[jsjk.AXIS_X] + ":" + vec[jsjk.AXIS_Y] + "]";
 };
 
 jsjk.printDebug = function(string) {
-    if (jsjk._enableDebug) { // Variable doesn't exist by default; create it to enable debugging
-        console.debug(string);
-    }
+  if (jsjk._enableDebug) { // Variable doesn't exist by default; create it to enable debugging
+    console.debug(string);
+  }
+};
+
+jsjk.printInfo = function(string) {
+  console.log(string);
+};
+
+jsjk.printWarning = function(string) {
+  console.warn(string);
 };
 
 // Default callbacks
 
 jsjk.init = function() {};
 jsjk.tick = function(delta) {};
+jsjk.draw = function(delta) {};
 jsjk.keyPress = function(code, name) {};
 jsjk.keyRelease = function(code, name) {};
 jsjk.mousePress = function(button, pos) {};
@@ -76,113 +82,306 @@ jsjk.mouseRelease = function(button, pos) {};
 jsjk.mouseMove = function(pos) {};
 
 jsjk._init = function() {
-    // Init
+  // Init
 
-    jsjk._startTime = jsjk._getTime();
-    jsjk._lastFrame = jsjk._getTime();
+  jsjk._startTime = jsjk._getTime();
+  jsjk._lastFrame = jsjk._getTime();
+  jsjk._delta = 0.0001; // Can't be zero in case of divive by zero
 
-    jsjk.init();
+  jsjk.init();
 
-    // Tick
-
-    if (jsjk._frameRate === undefined) {
-        jsjk.frameRate(60); // Default framerate if jsjk.init doesn't set it
-    }
+  setInterval(jsjk._tick, 1000 / 60); // 60 frames per second
+  requestAnimationFrame(jsjk._draw); // Variable but typically 60 fps; pauses when the tab is inactive
 };
 
 jsjk._tick = function() {
-    var delta = jsjk._getTime() - jsjk._lastFrame;
+  jsjk._delta = jsjk._getTime() - jsjk._lastFrame;
 
-    jsjk._lastFrame = jsjk._getTime();
+  jsjk._lastFrame = jsjk._getTime();
 
-    jsjk.tick(delta);
+  jsjk.tick(jsjk._delta);
+};
+
+jsjk._draw = function(time) {
+  jsjk.draw(jsjk._delta);
+
+  requestAnimationFrame(jsjk._draw);
 };
 
 jsjk._keyPress = function(event) {
-    jsjk.printDebug("Key press: " + event.which + ", " + event.key);
+  //jsjk.printDebug("Key press: " + event.which + ", " + event.key);
 
-    if (jsjk.keyPress(event.which, event.key) === jsjk.HANDLED) {
-        event.preventDefault();
-    }
+  if (jsjk.keyPress(event.which, event.key) === jsjk.HANDLED) {
+    event.preventDefault();
+  }
 };
 
 jsjk._keyRelease = function(event) {
-    jsjk.printDebug("Key release: " + event.which + ", " + event.key);
+  //jsjk.printDebug("Key release: " + event.which + ", " + event.key);
 
-    if (jsjk.keyRelease(event.which, event.key) === jsjk.HANDLED) {
-        event.preventDefault();
-    }
+  if (jsjk.keyRelease(event.which, event.key) === jsjk.HANDLED) {
+    event.preventDefault();
+  }
 };
 
 jsjk._mousePress = function(event) {
-    var pos = [event.pageX, event.pageY];
+  var pos = [event.clientX, event.clientY];
 
-    jsjk.printDebug("Mouse press: " + event.which + ", " + jsjk.stringifyVector(pos));
+  //jsjk.printDebug("Mouse press: " + event.which + ", " + jsjk.stringifyVector(pos));
 
-    if (jsjk.mousePress(event.which, pos) === jsjk.HANDLED) {
-        event.preventDefault();
-    }
+  if (jsjk.mousePress(event.which, pos) === jsjk.HANDLED) {
+    event.preventDefault();
+  }
 };
 
 jsjk._mouseRelease = function(event) {
-    var pos = [event.pageX, event.pageY];
+  var pos = [event.clientX, event.clientY];
 
-    jsjk.printDebug("Mouse release: " + event.which + ", " + jsjk.stringifyVector(pos));
+  //jsjk.printDebug("Mouse release: " + event.which + ", " + jsjk.stringifyVector(pos));
 
-    if (jsjk.mouseRelease(event.which, pos) === jsjk.HANDLED) {
-        event.preventDefault();
-    }
+  if (jsjk.mouseRelease(event.which, pos) === jsjk.HANDLED) {
+    event.preventDefault();
+  }
 };
 
 jsjk._mouseMove = function(event) {
-    var pos = [event.pageX, event.pageY];
+  var pos = [event.clientX, event.clientY];
 
-    jsjk.printDebug("Mouse move: " + jsjk.stringifyVector(pos));
+  //jsjk.printDebug("Mouse move: " + jsjk.stringifyVector(pos));
 
-    if (jsjk.mouseMove(pos) === jsjk.HANDLED) {
-        event.preventDefault();
-    }
+  if (jsjk.mouseMove(pos) === jsjk.HANDLED) {
+    event.preventDefault();
+  }
 };
 
 // Timing
 
 jsjk._getTime = function() {
-    return new Date().getTime() / 1000;
+  return new Date().getTime() / 1000;
 };
 
-jsjk.getElapsedTime = function() {
-    return jsjk._getTime() - jsjk._startTime;
+jsjk.getTime = function() {
+  return jsjk._getTime() - jsjk._startTime;
 };
 
-jsjk.frameRate = function(fr) {
-    if (fr) {
-        jsjk._frameRate = fr;
+// Class:Canvas
 
-        if (jsjk._tickInterval) {
-            clearInterval(jsjk._tickInterval);
-        }
-
-        jsjk._tickInterval = setInterval(jsjk._tick, 1000 / jsjk._frameRate);
-    }
-
-    return jsjk._frameRate;
-};
-
-// Canvas
-
-jsjk.Canvas = function(width, height) {
+jsjk.Canvas = Class.extend({
+  init: function(width, height) {
     this.width = width;
     this.height = height;
 
-    this.element = null;
-    this.context = null;
-};
+    this.viewWidth = width;
+    this.viewHeight = height;
 
-jsjk.Canvas.prototype.setFilter = function(filter) {
-    if (filter === jsjk.FILTER_LINEAR) {
-    } else {
+    // Create element
+
+    this.element = document.createElement("canvas");
+
+    document.body.appendChild(this.element);
+
+    this.element.classList.add("jsjk_canvas");
+
+    this.setHidden(true);
+
+    this.adjustViewport(false, false, false, false);
+
+    // Define context but don't create it yet
+
+    this.context = null;
+  },
+
+  createContext: function(type, attr) {
+    if (this.context !== null) {
+      jsjk.printWarning("Attempted to create a preexisting existing context");
     }
-}
+
+    this.context = this.element.getContext(type, attr);
+  },
+
+  // Options/flags
+
+  setHidden: function(enable) {
+    this.element.hidden = enable;
+  },
+
+  // Viewport
+
+  adjustViewport: function(fullscreen, keepAspect, keepPixelRatio, centered) {
+    this.element.width = this.width;
+    this.element.height = this.height;
+
+    if (fullscreen) {
+      if (keepAspect) {
+        var fit = Math.min(window.innerWidth / this.width, window.innerHeight / this.height);
+
+        if (keepPixelRatio) {
+          fit = Math.floor(fit);
+        }
+
+        this.viewWidth = this.width * fit;
+        this.viewHeight = this.height * fit;
+      } else {
+        if (keepPixelRatio) {
+          this.viewWidth = this.width * Math.floor(window.innerWidth / this.width);
+          this.viewHeight = this.height * Math.floor(window.innerHeight / this.height);
+        } else {
+          this.viewWidth = window.innerWidth;
+          this.viewHeight = window.innerHeight;
+        }
+      }
+
+      this.element.style.width = this.viewWidth + "px";
+      this.element.style.height = this.viewHeight + "px";
+    } else {
+      this.viewWidth = this.width;
+      this.viewHeight = this.height;
+
+      this.element.style.width = "";
+      this.element.style.height = "";
+    }
+
+    if (centered) {
+      this.element.style.left = ((window.innerWidth / 2) - (this.viewWidth / 2)) + "px";
+      this.element.style.top = ((window.innerHeight / 2) - (this.viewHeight / 2)) + "px";
+    } else {
+      this.element.style.left = "";
+      this.element.style.top = "";
+    }
+  },
+});
+
+// Class:Canvas>Canvas2D
+
+jsjk.Canvas2D = jsjk.Canvas.extend({
+  init: function(width, height) {
+    this._super(width, height);
+
+    this.createContext("2d");
+
+    this.stroke(0, 255);
+    this.fill(255, 255);
+  },
+
+  // Options/flags
+
+  setPixelated: function(enable) {
+    if (enable) {
+      this.element.classList.add("jsjk_pixelated");
+    } else {
+      this.element.classList.remove("jsjk_pixelated");
+    }
+  },
+
+  // Matrix operations
+
+  pushMatrix: function() {
+    this.context.save();
+  },
+  popMatrix: function() {
+    this.context.restore();
+  },
+  identityMatrix: function() {
+    this.context.setTransform(1, 0, 0, 1, 0, 0);
+  },
+
+  // Background clear
+
+  clear: function() {
+    this.pushMatrix();
+
+    this.identityMatrix();
+
+    this.context.clearRect(0, 0, this.width, this.height);
+
+    this.popMatrix();
+  },
+
+  // Stroke color
+
+  stroke: function(r, g, b, a) {
+    this.enableStroke = true;
+
+    if (g === undefined) { // Grayscale
+      this.context.strokeStyle = "rgb(" + r + "," + r + "," + r + ")";
+    } else if (b === undefined) { // Grayscale + alpha
+      this.context.strokeStyle = "rgba(" + r + "," + r + "," + r + "," + g + ")";
+    } else if (a === undefined) { // RGB
+      this.context.strokeStyle = "rgb(" + r + "," + g + "," + b + ")";
+    } else { // Full RGBA
+      this.context.strokeStyle = "rgba(" + r + "," + g + "," + b + "," + a + ")";
+    }
+  },
+  noStroke: function() {
+    this.enableStroke = false;
+  },
+  applyStroke: function() {
+    if (this.enableStroke) {
+      this.context.stroke();
+    }
+  },
+
+  // Fill color
+
+  fill: function(r, g, b, a) {
+    this.enableFill = true;
+
+    if (g === undefined) { // Grayscale
+      this.context.fillStyle = "rgb(" + r + "," + r + "," + r + ")";
+    } else if (b === undefined) { // Grayscale + alpha
+      this.context.fillStyle = "rgba(" + r + "," + r + "," + r + "," + g + ")";
+    } else if (a === undefined) { // RGB
+      this.context.fillStyle = "rgb(" + r + "," + g + "," + b + ")";
+    } else { // Full RGBA
+      this.context.fillStyle = "rgba(" + r + "," + g + "," + b + "," + a + ")";
+    }
+  },
+  noFill: function() {
+    this.enableFill = false;
+  },
+  applyFill: function() {
+    if (this.enableFill) {
+      this.context.fill();
+    }
+  },
+
+  // Shapes
+
+  beginShape: function() {
+    this.context.beginPath();
+  },
+  endShape: function() { // If possible, call applyStroke/applyFill seperately as some operations only affect one
+    this.applyFill();
+    this.applyStroke();
+  },
+
+  closeShape: function() { // Joins start and end points of a shape
+    this.context.closePath();
+  },
+
+  // Drawing
+
+  drawLine: function(sx, sy, ex, ey) {
+    this.beginShape();
+
+    this.context.moveTo(sx, sy);
+    this.context.lineTo(ex, ey);
+
+    this.applyStroke();
+  },
+
+  drawArc: function(x, y, radius, sr, er, cc) {
+    this.beginShape();
+
+    this.context.arc(x, y, radius, sr, er, cc);
+
+    this.endShape();
+  },
+
+  drawCircle: function(x, y, radius) {
+    this.drawArc(x, y, radius, 0, Math.PI * 2, false);
+  },
+});
 
 // Assign internal callbacks
 

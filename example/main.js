@@ -1,25 +1,43 @@
+
 with (jsjk) {
-    init = function() {
-        _enableDebug = true;
+  var canvas = null;
 
-        frameRate(10);
-    };
+  init = function() {
+    _enableDebug = true;
 
-    tick = function(delta) {
-    };
+    canvas = new Canvas2D(320, 180);
 
-    keyPress = function(code, name) {
-    };
+    canvas.setHidden(false);
+    canvas.setPixelated(true);
+  };
 
-    keyRelease = function(code, name) {
-    };
+  tick = function(delta) {
+  };
 
-    mousePress = function(button, pos) {
-    };
+  draw = function(delta) {
+    canvas.adjustViewport(true, true, true, true);
 
-    mouseRelease = function(button, pos) {
-    };
+    canvas.clear();
 
-    mouseMove = function(pos) {
-    };
+    canvas.stroke(255, 0, 0);
+    canvas.drawLine(10, 10, 120, 80 + (Math.sin(getTime() * 2) * 20));
+
+    canvas.fill(0, 0, 255);
+    canvas.drawCircle(50, 50, 40);
+  };
+
+  keyPress = function(code, name) {
+  };
+
+  keyRelease = function(code, name) {
+  };
+
+  mousePress = function(button, pos) {
+  };
+
+  mouseRelease = function(button, pos) {
+  };
+
+  mouseMove = function(pos) {
+  };
 }
