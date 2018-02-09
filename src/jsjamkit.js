@@ -164,6 +164,20 @@ jsjk.getTime = function() {
   return jsjk._getTime() - jsjk._startTime;
 };
 
+// Color
+
+jsjk.getColorString = function(r, g, b, a) {
+  if (g === undefined) { // Grayscale
+    return "rgb(" + r + "," + r + "," + r + ")";
+  } else if (b === undefined) { // Grayscale + alpha
+    return "rgba(" + r + "," + r + "," + r + "," + g + ")";
+  } else if (a === undefined) { // RGB
+    return "rgb(" + r + "," + g + "," + b + ")";
+  } else { // Full RGBA
+    return "rgba(" + r + "," + g + "," + b + "," + a + ")";
+  }
+};
+
 // Class:Canvas
 
 jsjk.Canvas = Class.extend({
@@ -259,8 +273,8 @@ jsjk.Canvas2D = jsjk.Canvas.extend({
 
     this.createContext("2d");
 
-    this.stroke(0, 255);
-    this.fill(255, 255);
+    this.setStroke(0, 255);
+    this.setFill(255, 255);
   },
 
   // Options/flags
@@ -285,8 +299,15 @@ jsjk.Canvas2D = jsjk.Canvas.extend({
     this.context.setTransform(1, 0, 0, 1, 0, 0);
   },
 
-  // Background clear
+  // Background
 
+  setBackground: function(r, g, b, a) {
+    if (r === undefined) {
+      this.element.style.backgroundColor = "";
+    } else {
+      this.element.style.backgroundColor = jsjk.getColorString(r, g, b, a);
+    }
+  },
   clear: function() {
     this.pushMatrix();
 
@@ -299,21 +320,14 @@ jsjk.Canvas2D = jsjk.Canvas.extend({
 
   // Stroke color
 
-  stroke: function(r, g, b, a) {
-    this.enableStroke = true;
+  setStroke: function(r, g, b, a) {
+    if (r === undefined) {
+      this.enableString = false;
+    } else {
+      this.enableStroke = true;
 
-    if (g === undefined) { // Grayscale
-      this.context.strokeStyle = "rgb(" + r + "," + r + "," + r + ")";
-    } else if (b === undefined) { // Grayscale + alpha
-      this.context.strokeStyle = "rgba(" + r + "," + r + "," + r + "," + g + ")";
-    } else if (a === undefined) { // RGB
-      this.context.strokeStyle = "rgb(" + r + "," + g + "," + b + ")";
-    } else { // Full RGBA
-      this.context.strokeStyle = "rgba(" + r + "," + g + "," + b + "," + a + ")";
+      this.context.strokeStyle = jsjk.getColorString(r, g, b, a);
     }
-  },
-  noStroke: function() {
-    this.enableStroke = false;
   },
   applyStroke: function() {
     if (this.enableStroke) {
@@ -323,21 +337,14 @@ jsjk.Canvas2D = jsjk.Canvas.extend({
 
   // Fill color
 
-  fill: function(r, g, b, a) {
-    this.enableFill = true;
+  setFill: function(r, g, b, a) {
+    if (r === undefined) {
+      this.enableString = false;
+    } else {
+      this.enableFill = true;
 
-    if (g === undefined) { // Grayscale
-      this.context.fillStyle = "rgb(" + r + "," + r + "," + r + ")";
-    } else if (b === undefined) { // Grayscale + alpha
-      this.context.fillStyle = "rgba(" + r + "," + r + "," + r + "," + g + ")";
-    } else if (a === undefined) { // RGB
-      this.context.fillStyle = "rgb(" + r + "," + g + "," + b + ")";
-    } else { // Full RGBA
-      this.context.fillStyle = "rgba(" + r + "," + g + "," + b + "," + a + ")";
+      this.context.fillStyle = jsjk.getColorString(r, g, b, a);
     }
-  },
-  noFill: function() {
-    this.enableFill = false;
   },
   applyFill: function() {
     if (this.enableFill) {

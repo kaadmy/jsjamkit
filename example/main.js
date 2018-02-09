@@ -9,6 +9,8 @@ with (jsjk) {
 
     canvas.setHidden(false);
     canvas.setPixelated(true);
+
+    canvas.setBackground(20, 20, 20);
   };
 
   tick = function(delta) {
@@ -19,10 +21,11 @@ with (jsjk) {
 
     canvas.clear();
 
-    canvas.stroke(255, 0, 0);
+    canvas.setStroke(255, 255, 255);
     canvas.drawLine(10, 10, 120, 80 + (Math.sin(getTime() * 2) * 20));
 
-    canvas.fill(0, 0, 255);
+    canvas.setStroke(255, 255, 255);
+    canvas.setFill(50, 50, 100, 0.8);
     canvas.drawCircle(50, 50, 40);
   };
 
