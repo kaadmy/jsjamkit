@@ -3,6 +3,21 @@ body {
     background: #000;
 }
 
+.jsjk_container {
+    position: absolute;
+    left: 0;
+    top: 0;
+}
+
+.jsjk_debug_text {
+    color: #9f9;
+    font-family: monospace;
+    font-size: 1em;
+    text-align: left;
+    line-height: 0;
+    padding: 0;
+}
+
 .jsjk_canvas {
     position: absolute;
     left: 0;

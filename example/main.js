@@ -21,12 +21,15 @@ with (jsjk) {
 
     canvas.clear();
 
-    canvas.setStroke(255, 255, 255);
+    canvas.setStroke(150, 255, 150);
+
     canvas.drawLine(10, 10, 120, 80 + (Math.sin(getTime() * 2) * 20));
 
-    canvas.setStroke(255, 255, 255);
-    canvas.setFill(50, 50, 100, 0.8);
+    canvas.setFill(100, 100, 100, 0.5);
+
     canvas.drawCircle(50, 50, 40);
+
+    canvas.drawRect(150, 80, 100, 80);
   };
 
   keyPress = function(code, name) {

@@ -81,12 +81,40 @@ jsjk.mousePress = function(button, pos) {};
 jsjk.mouseRelease = function(button, pos) {};
 jsjk.mouseMove = function(pos) {};
 
+jsjk._elements = {
+  canvases: null,
+
+  debug: null,
+  debugCont: {},
+};
+
 jsjk._init = function() {
+  // Get container elements
+
+  jsjk._elements.canvases = document.getElementById("jsjk_canvases");
+  jsjk._elements.debug = document.getElementById("jsjk_debug");
+
+  // Create debug info
+
+  function addDebugLine(name) {
+    jsjk._elements.debugCont[name] = document.createElement("p");
+
+    jsjk._elements.debug.appendChild(jsjk._elements.debugCont[name]);
+
+    jsjk._elements.debugCont[name].classList.add("jsjk_debug_text");
+
+    jsjk._elements.debugCont[name].textContent = name;
+  };
+
+  addDebugLine("timing");
+
+  jsjk._nextDebugUpdate = 0;
+
   // Init
 
   jsjk._startTime = jsjk._getTime();
   jsjk._lastFrame = jsjk._getTime();
-  jsjk._delta = 0.0001; // Can't be zero in case of divive by zero
+  jsjk._delta = 0.0001; // Can't be zero in case of divide by zero
 
   jsjk.init();
 
@@ -98,6 +126,12 @@ jsjk._tick = function() {
   jsjk._delta = jsjk._getTime() - jsjk._lastFrame;
 
   jsjk._lastFrame = jsjk._getTime();
+
+  if (jsjk._lastFrame > jsjk._nextDebugUpdate) {
+    jsjk._nextDebugUpdate = jsjk._lastFrame + 0.5;
+
+    jsjk._elements.debugCont.timing.textContent = "FPS: " + Math.floor(1.0 / jsjk._delta);
+  }
 
   jsjk.tick(jsjk._delta);
 };
@@ -192,7 +226,7 @@ jsjk.Canvas = Class.extend({
 
     this.element = document.createElement("canvas");
 
-    document.body.appendChild(this.element);
+    jsjk._elements.canvases.appendChild(this.element);
 
     this.element.classList.add("jsjk_canvas");
 
@@ -322,7 +356,7 @@ jsjk.Canvas2D = jsjk.Canvas.extend({
 
   setStroke: function(r, g, b, a) {
     if (r === undefined) {
-      this.enableString = false;
+      this.enableStroke = false;
     } else {
       this.enableStroke = true;
 
@@ -339,7 +373,7 @@ jsjk.Canvas2D = jsjk.Canvas.extend({
 
   setFill: function(r, g, b, a) {
     if (r === undefined) {
-      this.enableString = false;
+      this.enableFill = false;
     } else {
       this.enableFill = true;
 
@@ -375,6 +409,16 @@ jsjk.Canvas2D = jsjk.Canvas.extend({
     this.context.lineTo(ex, ey);
 
     this.applyStroke();
+  },
+
+  drawRect: function(x, y, w, h) {
+    if (this.enableFill) {
+      this.context.fillRect(x, y, w, h);
+    }
+
+    if (this.enableStroke) {
+      this.context.strokeRect(x, y, w, h);
+    }
   },
 
   drawArc: function(x, y, radius, sr, er, cc) {
