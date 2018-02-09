@@ -9,6 +9,12 @@ body {
     top: 0;
 }
 
+.jsjk_canvas {
+    position: absolute;
+    left: 0;
+    top: 0;
+}
+
 .jsjk_debug_text {
     color: #9f9;
     font-family: monospace;
@@ -18,10 +24,8 @@ body {
     padding: 0;
 }
 
-.jsjk_canvas {
-    position: absolute;
-    left: 0;
-    top: 0;
+.jsjk_hidden {
+    display: none;
 }
 
 .jsjk_pixelated { /* Copied from http://phrogz.net/tmp/canvas_image_zoom.html */

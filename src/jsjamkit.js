@@ -50,6 +50,13 @@ jsjk.MOUSE_RIGHT = 2;
 jsjk.AXIS_X = 0;
 jsjk.AXIS_Y = 1;
 
+jsjk.ASSET_IMAGE = 0;
+jsjk.ASSET_SOUND = 1;
+
+// Generic state
+
+jsjk._enableDebug = false;
+
 // Utility functions
 
 jsjk.stringifyVector = function(vec) { // ??? Should we support arbitrary length vectors?
@@ -57,7 +64,7 @@ jsjk.stringifyVector = function(vec) { // ??? Should we support arbitrary length
 };
 
 jsjk.printDebug = function(string) {
-  if (jsjk._enableDebug) { // Variable doesn't exist by default; create it to enable debugging
+  if (jsjk._enableDebug) {
     console.debug(string);
   }
 };
@@ -68,6 +75,10 @@ jsjk.printInfo = function(string) {
 
 jsjk.printWarning = function(string) {
   console.warn(string);
+};
+
+jsjk.printError = function(string) {
+  console.error(string);
 };
 
 // Default callbacks
@@ -81,34 +92,28 @@ jsjk.mousePress = function(button, pos) {};
 jsjk.mouseRelease = function(button, pos) {};
 jsjk.mouseMove = function(pos) {};
 
-jsjk._elements = {
-  canvases: null,
+jsjk._cache = { // Runtime data cache
+  assetsElem: null,
+  assets: {}, // Keyed by path
 
-  debug: null,
-  debugCont: {},
+  soundsElem: null,
+  sounds: [], // List of currently playing sounds
+
+  canvasesElem: null,
+
+  debugElem: null,
+  debug: {},
 };
 
 jsjk._init = function() {
   // Get container elements
 
-  jsjk._elements.canvases = document.getElementById("jsjk_canvases");
-  jsjk._elements.debug = document.getElementById("jsjk_debug");
+  jsjk._cache.assetsElem = document.getElementById("jsjk_assets");
 
-  // Create debug info
+  jsjk._cache.soundsElem = document.getElementById("jsjk_sounds");
 
-  function addDebugLine(name) {
-    jsjk._elements.debugCont[name] = document.createElement("p");
-
-    jsjk._elements.debug.appendChild(jsjk._elements.debugCont[name]);
-
-    jsjk._elements.debugCont[name].classList.add("jsjk_debug_text");
-
-    jsjk._elements.debugCont[name].textContent = name;
-  };
-
-  addDebugLine("timing");
-
-  jsjk._nextDebugUpdate = 0;
+  jsjk._cache.canvasesElem = document.getElementById("jsjk_canvases");
+  jsjk._cache.debugElem = document.getElementById("jsjk_debug");
 
   // Init
 
@@ -117,6 +122,25 @@ jsjk._init = function() {
   jsjk._delta = 0.0001; // Can't be zero in case of divide by zero
 
   jsjk.init();
+
+  // Create debug info (always create these but hide them incase so you can enable debugging at runtime)
+
+  function addDebugLine(name) {
+    jsjk._cache.debug[name] = document.createElement("p");
+    jsjk._cache.debugElem.appendChild(jsjk._cache.debug[name]);
+
+    jsjk._cache.debug[name].classList.add("jsjk_debug_text");
+    jsjk._cache.debug[name].textContent = name;
+    jsjk._cache.debug[name].hidden = true;
+  };
+
+  addDebugLine("timing");
+  addDebugLine("assets_cached");
+  addDebugLine("playing_sounds");
+
+  jsjk._nextDebugUpdate = 0;
+
+  // Setup callbacks for mainloop(s)
 
   setInterval(jsjk._tick, 1000 / 60); // 60 frames per second
   requestAnimationFrame(jsjk._draw); // Variable but typically 60 fps; pauses when the tab is inactive
@@ -127,11 +151,24 @@ jsjk._tick = function() {
 
   jsjk._lastFrame = jsjk._getTime();
 
-  if (jsjk._lastFrame > jsjk._nextDebugUpdate) {
-    jsjk._nextDebugUpdate = jsjk._lastFrame + 0.5;
+  // Debugging info
 
-    jsjk._elements.debugCont.timing.textContent = "FPS: " + Math.floor(1.0 / jsjk._delta);
+  for (var name in jsjk._cache.debug) {
+    jsjk._cache.debug[name].hidden = !jsjk._enableDebug;
   }
+
+  if (jsjk._enableDebug) {
+    if (jsjk._lastFrame > jsjk._nextDebugUpdate) {
+      jsjk._nextDebugUpdate = jsjk._lastFrame + 0.5;
+
+      jsjk._cache.debug.timing.textContent = "FPS: " + Math.floor(1.0 / jsjk._delta);
+    }
+
+    jsjk._cache.debug.assets_cached.textContent = "Cached assets: " + Object.keys(jsjk._cache.assets).length;
+    jsjk._cache.debug.playing_sounds.textContent = "Playing sounds: " + Object.keys(jsjk._cache.sounds).length;
+  }
+
+  // Main callback
 
   jsjk.tick(jsjk._delta);
 };
@@ -212,7 +249,62 @@ jsjk.getColorString = function(r, g, b, a) {
   }
 };
 
-// Class:Canvas
+// Class->Asset
+
+jsjk.Asset = Class.extend({
+  init: function(type, path) {
+    if (jsjk._cache.assets[path] !== undefined) {
+      jsjk.printWarning("Tried to precache asset " + path + " but is already loaded, expect crashes");
+    }
+
+    jsjk._cache.assets[path] = this;
+
+    this.type = type;
+    this.path = path;
+
+    this.element = null;
+
+    this.cache();
+  },
+
+  // Caching
+
+  cache: function() {
+    if (this.type === jsjk.ASSET_IMAGE) {
+      this.cacheImage();
+    } else if (this.type === jsjk.ASSET_SOUND) {
+      this.cacheSound();
+    } else {
+      jsjk.printError("Unknown asset type " + this.type);
+    }
+  },
+
+  cacheImage: function() {
+    this.element = document.createElement("img");
+    jsjk._cache.assetsElem.appendChild(this.element);
+
+    this.element.src = this.path;
+
+    console.log(this.element);
+
+    this.element.onload = function() {
+      console.warn(this);
+    };
+  },
+
+  cacheSound: function() {
+  },
+
+  // Getter (return type depends on asset type)
+
+  get: function() {
+    if (this.type === jsjk.ASSET_IMAGE || this.type === jsjk.ASSET_SOUND) {
+      return this.element;
+    }
+  },
+})
+
+// Class->Canvas
 
 jsjk.Canvas = Class.extend({
   init: function(width, height) {
@@ -225,11 +317,9 @@ jsjk.Canvas = Class.extend({
     // Create element
 
     this.element = document.createElement("canvas");
-
-    jsjk._elements.canvases.appendChild(this.element);
+    jsjk._cache.canvasesElem.appendChild(this.element);
 
     this.element.classList.add("jsjk_canvas");
-
     this.setHidden(true);
 
     this.adjustViewport(false, false, false, false);
@@ -261,7 +351,7 @@ jsjk.Canvas = Class.extend({
 
     if (fullscreen) {
       if (keepAspect) {
-        var fit = Math.min(window.innerWidth / this.width, window.innerHeight / this.height);
+        var fit = Math.max(1, Math.min(window.innerWidth / this.width, window.innerHeight / this.height));
 
         if (keepPixelRatio) {
           fit = Math.floor(fit);
@@ -271,8 +361,8 @@ jsjk.Canvas = Class.extend({
         this.viewHeight = this.height * fit;
       } else {
         if (keepPixelRatio) {
-          this.viewWidth = this.width * Math.floor(window.innerWidth / this.width);
-          this.viewHeight = this.height * Math.floor(window.innerHeight / this.height);
+          this.viewWidth = this.width * Math.max(1, Math.floor(window.innerWidth / this.width));
+          this.viewHeight = this.height * Math.max(1, Math.floor(window.innerHeight / this.height));
         } else {
           this.viewWidth = window.innerWidth;
           this.viewHeight = window.innerHeight;
@@ -296,10 +386,10 @@ jsjk.Canvas = Class.extend({
       this.element.style.left = "";
       this.element.style.top = "";
     }
-  },
+  }
 });
 
-// Class:Canvas>Canvas2D
+// Class->Canvas->Canvas2D
 
 jsjk.Canvas2D = jsjk.Canvas.extend({
   init: function(width, height) {
@@ -309,6 +399,8 @@ jsjk.Canvas2D = jsjk.Canvas.extend({
 
     this.setStroke(0, 255);
     this.setFill(255, 255);
+
+    this.lineWidth = 1;
   },
 
   // Options/flags
@@ -333,6 +425,18 @@ jsjk.Canvas2D = jsjk.Canvas.extend({
     this.context.setTransform(1, 0, 0, 1, 0, 0);
   },
 
+  translate: function(x, y) {
+    this.context.translate(x, y);
+  },
+
+  rotate: function(r) {
+    this.context.rotate(r);
+  },
+
+  scale: function(x, y) {
+    this.context.scale(x, y);
+  },
+
   // Background
 
   setBackground: function(r, g, b, a) {
@@ -352,7 +456,7 @@ jsjk.Canvas2D = jsjk.Canvas.extend({
     this.popMatrix();
   },
 
-  // Stroke color
+  // Stroke
 
   setStroke: function(r, g, b, a) {
     if (r === undefined) {
@@ -369,7 +473,7 @@ jsjk.Canvas2D = jsjk.Canvas.extend({
     }
   },
 
-  // Fill color
+  // Fill
 
   setFill: function(r, g, b, a) {
     if (r === undefined) {
@@ -405,33 +509,50 @@ jsjk.Canvas2D = jsjk.Canvas.extend({
   drawLine: function(sx, sy, ex, ey) {
     this.beginShape();
 
+    this.context.lineWidth = this.lineWidth;
+
     this.context.moveTo(sx, sy);
     this.context.lineTo(ex, ey);
 
     this.applyStroke();
+
+    this.closeShape();
   },
 
   drawRect: function(x, y, w, h) {
-    if (this.enableFill) {
-      this.context.fillRect(x, y, w, h);
-    }
+    this.beginShape();
 
-    if (this.enableStroke) {
-      this.context.strokeRect(x, y, w, h);
-    }
+    this.context.lineWidth = this.lineWidth;
+
+    this.context.rect(x, y, w, h);
+
+    this.endShape();
   },
 
   drawArc: function(x, y, radius, sr, er, cc) {
     this.beginShape();
 
+    this.context.lineWidth = this.lineWidth;
+
     this.context.arc(x, y, radius, sr, er, cc);
 
     this.endShape();
+    this.closeShape();
   },
 
   drawCircle: function(x, y, radius) {
     this.drawArc(x, y, radius, 0, Math.PI * 2, false);
   },
+
+  drawImage: function(image, sx, sy, sw, sh, x, y, w, h) {
+    if (sw === undefined) { // x/y
+      this.context.drawImage(image, sx, sy);
+    } else if (x === undefined) { // x/y/w/h
+      this.context.drawImage(image, sx, sy, sw, sh);
+    } else { // sx/sy/sw/sh/x/y/w/h
+      this.context.drawImage(image, sx, sy, sw, sh, x, y, w, h);
+    }
+  }
 });
 
 // Assign internal callbacks
