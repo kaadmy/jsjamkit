@@ -36,7 +36,7 @@ var jsjk = {};
 
 // Constants
 
-jsjk.HANDLED = 1;
+jsjk.HANDLED = 1; // If an event has been handled
 
 jsjk.KEY_LEFT = 37;
 jsjk.KEY_UP = 38;
@@ -52,6 +52,10 @@ jsjk.AXIS_Y = 1;
 
 jsjk.ASSET_IMAGE = 0;
 jsjk.ASSET_SOUND = 1;
+
+jsjk.OVERLAP_NONE = 0; // Sounds will only play if the channel is currently inactive
+jsjk.OVERLAP_RESET = 1; // Only the last sound played will be active
+jsjk.OVERLAP_QUEUE = 2; // Sounds will be added to a queue and played in FIFO order
 
 // Generic state
 
@@ -94,14 +98,11 @@ jsjk.mouseMove = function(pos) {};
 
 jsjk._cache = { // Runtime data cache
   assetsElem: null,
-  assets: {}, // Keyed by path
-
   soundsElem: null,
-  sounds: [], // List of currently playing sounds
-
   canvasesElem: null,
-
   debugElem: null,
+
+  sounds: [], // List of currently playing sounds
   debug: {},
 };
 
@@ -135,8 +136,6 @@ jsjk._init = function() {
   };
 
   addDebugLine("timing");
-  addDebugLine("assets_cached");
-  addDebugLine("playing_sounds");
 
   jsjk._nextDebugUpdate = 0;
 
@@ -163,9 +162,6 @@ jsjk._tick = function() {
 
       jsjk._cache.debug.timing.textContent = "FPS: " + Math.floor(1.0 / jsjk._delta);
     }
-
-    jsjk._cache.debug.assets_cached.textContent = "Cached assets: " + Object.keys(jsjk._cache.assets).length;
-    jsjk._cache.debug.playing_sounds.textContent = "Playing sounds: " + Object.keys(jsjk._cache.sounds).length;
   }
 
   // Main callback
@@ -249,54 +245,79 @@ jsjk.getColorString = function(r, g, b, a) {
   }
 };
 
-// Class->Asset
+// Class->AssetManager
 
-jsjk.Asset = Class.extend({
-  init: function(type, path) {
-    if (jsjk._cache.assets[path] !== undefined) {
-      jsjk.printWarning("Tried to precache asset " + path + " but is already loaded, expect crashes");
-    }
+jsjk.AssetManager = Class.extend({
+  init: function() {
+    this.element = jsjk._cache.assetsElem;
 
-    jsjk._cache.assets[path] = this;
+    this.assets = {};
 
-    this.type = type;
-    this.path = path;
-
-    this.element = null;
-
-    this.cache();
+    this.queue = [];
   },
 
-  // Caching
+  // Loading
 
-  cache: function() {
-    if (this.type === jsjk.ASSET_IMAGE) {
-      this.cacheImage();
-    } else if (this.type === jsjk.ASSET_SOUND) {
-      this.cacheSound();
+  load: function(type, name, path) {
+    if (this.assets[name] !== undefined) {
+      jsjk.printWarning("[jsjk.AssetLoader.load] Tried to precache asset " + name + " but is already loaded");
+      return;
+    }
+
+    this.assets[name] = {type: type};
+
+    if (type === jsjk.ASSET_IMAGE) {
+      this.loadImage(name, path);
+    } else if (type === jsjk.ASSET_SOUND) {
+      this.loadSound(name, path); // Function does not exist yet; will add after other stuff is more complete
     } else {
-      jsjk.printError("Unknown asset type " + this.type);
+      jsjk.printError("[jsjk.AssetLoader.load] Unknown asset type " + type);
+      delete this.assets[name];
     }
   },
 
-  cacheImage: function() {
-    this.element = document.createElement("img");
-    jsjk._cache.assetsElem.appendChild(this.element);
+  loadImage: function(name, path) {
+    this.assets[name].element = document.createElement("img");
+    this.element.appendChild(this.assets[name].element);
 
-    this.element.src = this.path;
+    this.assets[name].element.src = path;
   },
 
-  cacheSound: function() {
-  },
+  // Getters
 
-  // Getter (return type depends on asset type)
-
-  get: function() {
-    if (this.type === jsjk.ASSET_IMAGE || this.type === jsjk.ASSET_SOUND) {
-      return this.element;
+  getType: function(name) {
+    if (this.assets[name] !== undefined) {
+      return this.assets[name].type;
     }
+
+    jsjk.printWarning("[jsjk.AssetLoader.getType] Tried to get asset " + name + " but not loaded");
+    return;
   },
-})
+
+  get: function(name) {
+    if (this.assets[name] !== undefined) {
+      var type = this.assets[name].type;
+
+      if (type == jsjk.ASSET_IMAGE || type == jsjk.ASSET_SOUND) {
+        return this.assets[name].element;
+      }
+      // The type is guaranteed to be valid as determined by jsjk.AssetManager.load
+    }
+
+    jsjk.printWarning("[jsjk.AssetLoader.get] Tried to get asset " + name + " but not loaded");
+    return;
+  },
+});
+
+// Class->SoundChannel
+
+jsjk.SoundChannel = Class.extend({
+  init: function(overlapMode) {
+    this.overlapMode = overlapMode;
+
+    this.queue = [];
+  },
+});
 
 // Class->Canvas
 
@@ -325,7 +346,7 @@ jsjk.Canvas = Class.extend({
 
   createContext: function(type, attr) {
     if (this.context !== null) {
-      jsjk.printWarning("Attempted to create a preexisting existing context");
+      jsjk.printWarning("[jsjk.Canvas.createContext] Attempted to create a preexisting context");
     }
 
     this.context = this.element.getContext(type, attr);
@@ -428,6 +449,10 @@ jsjk.Canvas2D = jsjk.Canvas.extend({
   },
 
   scale: function(x, y) {
+    if (y === undefined) {
+      y = x;
+    }
+
     this.context.scale(x, y);
   },
 
@@ -539,6 +564,11 @@ jsjk.Canvas2D = jsjk.Canvas.extend({
   },
 
   drawImage: function(image, sx, sy, sw, sh, x, y, w, h) {
+    if (image === undefined) {
+      jsjk.printWarning("[jsjk.Canvas.drawImage] Function called with a null image");
+      return;
+    }
+
     if (sw === undefined) { // x/y
       this.context.drawImage(image, sx, sy);
     } else if (x === undefined) { // x/y/w/h

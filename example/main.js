@@ -1,10 +1,25 @@
 
 with (jsjk) {
+  // State classes
+
   var canvas = null;
-  var asset = null;
+  var assetManager = null;
+
+  // Sound
+
+  var channels = [];
+
+  var CHANNEL_MUSIC     = 0;
+  var CHANNEL_PLAYER    = 1;
+  var CHANNEL_SFX       = 2;
+  var CHANNEL_ANNOUNCER = 3;
+
+  // Init function
 
   init = function() {
     _enableDebug = true;
+
+    // Create Canvas
 
     canvas = new Canvas2D(320, 180);
 
@@ -13,8 +28,21 @@ with (jsjk) {
 
     canvas.setBackground(20, 20, 20);
 
-    asset = new Asset(ASSET_IMAGE, "images/baboon.png"); // This will be moved into an AssetLoader
+    // Create AssetManager
+
+    assetManager = new AssetManager();
+
+    assetManager.load(ASSET_IMAGE, "test/baboon", "images/baboon.png");
+
+    // Create SoundManager
+
+    channels[CHANNEL_MUSIC]     = new SoundChannel(assetManager, OVERLAP_RESET);
+    channels[CHANNEL_PLAYER]    = new SoundChannel(assetManager, OVERLAP_NONE);
+    channels[CHANNEL_SFX]       = new SoundChannel(assetManager, OVERLAP_RESET);
+    channels[CHANNEL_ANNOUNCER] = new SoundChannel(assetManager, OVERLAP_QUEUE);
   };
+
+  // Update functions
 
   tick = function(delta) {
   };
@@ -34,8 +62,9 @@ with (jsjk) {
 
     canvas.translate(100, 20);
     canvas.rotate(Math.PI * 0.2);
+    canvas.scale(0.2);
 
-    canvas.drawImage(asset.get(), 0, 0, 100, 100);
+    canvas.drawImage(assetManager.get("test/baboon"), 0, 0);
 
     canvas.popMatrix();
 
@@ -55,6 +84,8 @@ with (jsjk) {
 
     canvas.drawRect(130, 80, 130, 100);
   };
+
+  // Callbacks
 
   keyPress = function(code, name) {
   };
