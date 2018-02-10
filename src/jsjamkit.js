@@ -485,6 +485,8 @@ jsjk.Canvas2D = jsjk.Canvas.extend({
 
     this.createContext("2d");
 
+    this.setBlendOp("source-over");
+
     this.setStroke(0, 255);
 
     this.setFill(255, 255);
