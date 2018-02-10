@@ -138,11 +138,7 @@ jsjk._init = function() {
   addDebugLine("timing");
 
   jsjk._nextDebugUpdate = 0;
-};
 
-// Called after the main init callback is finished so you can have async loading
-
-jsjk.initComplete = function() {
   // Setup callbacks for mainloop(s)
 
   setInterval(jsjk._tick, 1000 / 60); // 60 frames per second
@@ -259,15 +255,18 @@ jsjk.AssetManager = Class.extend({
 
     this.queue = [];
     this.queueItems = 0;
+
+    this.queueStartItems = 0;
+    this.queueLatestName = "null";
   },
 
   // Loading
 
   load: function(type, name, path, complete) {
-    jsjk.printInfo("[jsjk.AssetManager.load] Loading asset " + name + " from " + path);
+    jsjk.printInfo("Loading " + name + " from " + path);
 
     if (this.assets[name] !== undefined) {
-      jsjk.printWarning("[jsjk.AssetManager.load] Tried to load asset " + name + " but is already loaded");
+      jsjk.printWarning("Tried to load asset " + name + " but is already loaded");
       return;
     }
 
@@ -278,7 +277,7 @@ jsjk.AssetManager = Class.extend({
     } else if (type === jsjk.ASSET_SOUND) {
       this.loadSound(name, path, complete); // Function does not exist yet; will add after other stuff is more complete
     } else {
-      jsjk.printError("[jsjk.AssetManager.load] Unknown asset type " + type);
+      jsjk.printError("Unknown asset type " + type);
       delete this.assets[name];
     }
   },
@@ -303,8 +302,12 @@ jsjk.AssetManager = Class.extend({
     var items = this.queueItems; // Guarantee that the variable never changes due to async
     var am = this;
 
+    this.queueStartItems = this.queueItems;
+
     for (var i = 0; i < items; i++) {
       var last = this.queue.shift();
+
+      this.queueLatestName = last.name;
 
       this.load(last.type, last.name, last.path, function() {
         am.queueItems--;
@@ -316,6 +319,10 @@ jsjk.AssetManager = Class.extend({
     }
   },
 
+  getPreloadProgress: function() {
+    return {fraction: 1.0 - (this.queueItems / this.queueStartItems), name: this.queueLatestName};
+  },
+
   // Getters
 
   getType: function(name) {
@@ -323,7 +330,7 @@ jsjk.AssetManager = Class.extend({
       return this.assets[name].type;
     }
 
-    jsjk.printWarning("[jsjk.AssetManager.getType] Tried to get asset " + name + " but not loaded");
+    jsjk.printWarning("Tried to get type of asset " + name + " but not loaded");
     return;
   },
 
@@ -333,11 +340,14 @@ jsjk.AssetManager = Class.extend({
 
       if (type == jsjk.ASSET_IMAGE || type == jsjk.ASSET_SOUND) {
         return this.assets[name].element;
+      } else {
+        // The type is valid as determined by jsjk.AssetManager.load; exception JIC since this could be hard to debug
+        jsjk.printWarning("Tried to get asset " + name + " but type is invalid. This is a developer error!");
+        return;
       }
-      // The type is guaranteed to be valid as determined by jsjk.AssetManager.load
     }
 
-    jsjk.printWarning("[jsjk.AssetManager.get] Tried to get asset " + name + " but not loaded");
+    jsjk.printWarning("Tried to get asset " + name + " but not loaded");
     return;
   },
 });

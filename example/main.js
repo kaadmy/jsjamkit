@@ -1,9 +1,14 @@
 
 with (jsjk) {
-  // State classes
+  // Canvas
 
   var canvas = null;
+
+  // Asset manager
+
   var assetManager = null;
+
+  var assetPreloadComplete = false;
 
   // Sound
 
@@ -43,7 +48,27 @@ with (jsjk) {
 
     assetManager.queueAsset(ASSET_IMAGE, "test/baboon", "images/baboon.png");
 
-    assetManager.beginPreload(jsjk.initComplete);
+    assetManager.beginPreload(function() {
+      assetPreloadComplete = true;
+    });
+  };
+
+  // Loading
+
+  var loading = function() {
+    var progress = assetManager.getPreloadProgress();
+
+    // Loading bar
+
+    canvas.setStroke();
+    canvas.setFill(200, 200, 60);
+
+    canvas.drawRect(
+      0,
+      Math.floor(canvas.height * 0.9),
+      Math.ceil(canvas.width * progress.fraction),
+      Math.ceil(canvas.height * 0.1)
+    );
   };
 
   // Update functions
@@ -55,6 +80,12 @@ with (jsjk) {
     // Adjust viewport position and scaling to be nice and pixelly
 
     canvas.adjustViewport(true, true, true, true);
+
+    if (!assetPreloadComplete) {
+      loading();
+
+      return;
+    }
 
     // Clear canvas
 
@@ -86,7 +117,7 @@ with (jsjk) {
 
     // Rect
 
-    canvas.drawRect(130, 80, 130, 100);
+    canvas.drawRect(130, 80, 130, 80);
   };
 
   // Callbacks
