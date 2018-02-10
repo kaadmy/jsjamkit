@@ -33,6 +33,8 @@ with (jsjk) {
 
     canvas.setBackground(20, 20, 20);
 
+    canvas.setLineWidth(3);
+
     // Create SoundManager
 
     channels[CHANNEL_MUSIC]     = new SoundChannel(assetManager, OVERLAP_RESET);
@@ -49,7 +51,7 @@ with (jsjk) {
     assetManager.queueAsset(ASSET_IMAGE, "test/baboon", "images/baboon.png");
 
     assetManager.beginPreload(function() {
-      assetPreloadComplete = true;
+      //assetPreloadComplete = true;
     });
   };
 
@@ -61,13 +63,25 @@ with (jsjk) {
     // Loading bar
 
     canvas.setStroke();
-    canvas.setFill(200, 200, 60);
+    canvas.setFill(255, 170, 70);
 
     canvas.drawRect(
       0,
-      Math.floor(canvas.height * 0.9),
+      Math.floor(canvas.height * 0.95),
       Math.ceil(canvas.width * progress.fraction),
-      Math.ceil(canvas.height * 0.1)
+      Math.ceil(canvas.height * 0.05)
+    );
+
+    // Loading progress
+
+    canvas.setFont("10px monospace");
+    canvas.setTextAlign("center");
+    canvas.setTextBaseline("bottom");
+
+    canvas.drawText(
+      "Loading " + Math.round(progress.fraction * 100) + "%",
+      Math.round(canvas.width / 2),
+      Math.round(canvas.height * 0.93)
     );
   };
 

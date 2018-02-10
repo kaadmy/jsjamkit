@@ -389,7 +389,7 @@ jsjk.Canvas = Class.extend({
 
   createContext: function(type, attr) {
     if (this.context !== null) {
-      jsjk.printWarning("[jsjk.Canvas.createContext] Attempted to create a preexisting context");
+      jsjk.printWarning("Attempted to create a preexisting context");
     }
 
     this.context = this.element.getContext(type, attr);
@@ -457,8 +457,6 @@ jsjk.Canvas2D = jsjk.Canvas.extend({
 
     this.setStroke(0, 255);
     this.setFill(255, 255);
-
-    this.lineWidth = 1;
   },
 
   // Options/flags
@@ -535,6 +533,10 @@ jsjk.Canvas2D = jsjk.Canvas.extend({
     }
   },
 
+  setLineWidth: function(width) {
+    this.context.lineWidth = width;
+  },
+
   // Fill
 
   setFill: function(r, g, b, a) {
@@ -552,18 +554,37 @@ jsjk.Canvas2D = jsjk.Canvas.extend({
     }
   },
 
+  // Text
+
+  setFont: function(font) {
+    this.context.font = font;
+  },
+
+  setTextAlign: function(align) {
+    this.context.textAlign = align;
+  },
+
+  setTextBaseline: function(baseline) {
+    this.context.textBaseline = baseline;
+  },
+
+  textWidth: function(text) {
+    return this.context.measureText(text).width;
+  },
+
   // Shapes
 
   beginShape: function() {
     this.context.beginPath();
   },
-  endShape: function() { // If possible, call applyStroke/applyFill seperately as some operations only affect one
-    this.applyFill();
-    this.applyStroke();
-  },
 
   closeShape: function() { // Joins start and end points of a shape
     this.context.closePath();
+  },
+
+  applyShape: function() { // If possible, call applyStroke/applyFill seperately as some operations only affect one
+    this.applyFill();
+    this.applyStroke();
   },
 
   // Drawing
@@ -577,38 +598,37 @@ jsjk.Canvas2D = jsjk.Canvas.extend({
     this.context.lineTo(ex, ey);
 
     this.applyStroke();
-
-    this.closeShape();
   },
 
-  drawRect: function(x, y, w, h) {
-    this.beginShape();
-
+  drawRect: function(x, y, w, h) { // ??? Add drawRoundedRect
     this.context.lineWidth = this.lineWidth;
 
     this.context.rect(x, y, w, h);
 
-    this.endShape();
+    this.applyShape();
   },
 
-  drawArc: function(x, y, radius, sr, er, cc) {
+  drawArc: function(x, y, radius, sr, er, cc, close) {
     this.beginShape();
 
     this.context.lineWidth = this.lineWidth;
 
     this.context.arc(x, y, radius, sr, er, cc);
 
-    this.endShape();
-    this.closeShape();
+    this.applyShape();
+
+    if (close) {
+      this.closeShape();
+    }
   },
 
   drawCircle: function(x, y, radius) {
-    this.drawArc(x, y, radius, 0, Math.PI * 2, false);
+    this.drawArc(x, y, radius, 0, Math.PI * 2, false, true);
   },
 
   drawImage: function(image, sx, sy, sw, sh, x, y, w, h) {
     if (image === undefined) {
-      jsjk.printWarning("[jsjk.Canvas.drawImage] Function called with a null image");
+      jsjk.printWarning("Null image to draw");
       return;
     }
 
@@ -618,6 +638,12 @@ jsjk.Canvas2D = jsjk.Canvas.extend({
       this.context.drawImage(image, sx, sy, sw, sh);
     } else { // sx/sy/sw/sh/x/y/w/h
       this.context.drawImage(image, sx, sy, sw, sh, x, y, w, h);
+    }
+  },
+
+  drawText: function(text, x, y) {
+    if (this.enableFill) {
+      this.context.fillText(text, x, y);
     }
   }
 });
