@@ -43,9 +43,9 @@ jsjk.KEY_UP = 38;
 jsjk.KEY_RIGHT = 39;
 jsjk.KEY_DOWN = 40;
 
-jsjk.MOUSE_LEFT = 0;
-jsjk.MOUSE_MIDDLE = 1;
-jsjk.MOUSE_RIGHT = 2;
+jsjk.MOUSE_LEFT = 1;
+jsjk.MOUSE_MIDDLE = 2;
+jsjk.MOUSE_RIGHT = 3;
 
 jsjk.AXIS_X = 0;
 jsjk.AXIS_Y = 1;
@@ -57,9 +57,33 @@ jsjk.OVERLAP_NONE = 0; // Sounds will only play if the channel is currently inac
 jsjk.OVERLAP_RESET = 1; // Only the last sound played will be active
 jsjk.OVERLAP_QUEUE = 2; // Sounds will be added to a queue and played in FIFO order
 
+// Default callbacks
+
+jsjk.init = function() {};
+jsjk.tick = function(delta) {};
+jsjk.draw = function(delta) {};
+jsjk.keyPress = function(code, name) {};
+jsjk.keyRelease = function(code, name) {};
+jsjk.mousePress = function(button, pos) {};
+jsjk.mouseRelease = function(button, pos) {};
+jsjk.mouseMove = function(pos) {};
+jsjk.pointerLockChange = function() {};
+
 // Generic state
 
 jsjk._enableDebug = false;
+
+// Runtime data cache
+
+jsjk._cache = {
+  assetsElem: null,
+  soundsElem: null,
+  canvasesElem: null,
+  debugElem: null,
+
+  sounds: [], // List of currently playing sounds
+  debug: {},
+};
 
 // Utility functions
 
@@ -85,26 +109,7 @@ jsjk.printError = function(string) {
   console.error(string);
 };
 
-// Default callbacks
-
-jsjk.init = function() {};
-jsjk.tick = function(delta) {};
-jsjk.draw = function(delta) {};
-jsjk.keyPress = function(code, name) {};
-jsjk.keyRelease = function(code, name) {};
-jsjk.mousePress = function(button, pos) {};
-jsjk.mouseRelease = function(button, pos) {};
-jsjk.mouseMove = function(pos) {};
-
-jsjk._cache = { // Runtime data cache
-  assetsElem: null,
-  soundsElem: null,
-  canvasesElem: null,
-  debugElem: null,
-
-  sounds: [], // List of currently playing sounds
-  debug: {},
-};
+// Internal callbacks
 
 jsjk._init = function() {
   // Get container elements
@@ -175,6 +180,8 @@ jsjk._draw = function(time) {
   requestAnimationFrame(jsjk._draw);
 };
 
+// Event callbacks
+
 jsjk._keyPress = function(event) {
   //jsjk.printDebug("Key press: " + event.which + ", " + event.key);
 
@@ -214,10 +221,28 @@ jsjk._mouseRelease = function(event) {
 jsjk._mouseMove = function(event) {
   var pos = [event.clientX, event.clientY];
 
-  //jsjk.printDebug("Mouse move: " + jsjk.stringifyVector(pos));
+  if (jsjk.getPointerLock()) {
+    pos = [event.movementX, event.movementY];
+  }
+
+  //jsjk.printDebug("Mouse move/rel: " + jsjk.stringifyVector(pos));
 
   if (jsjk.mouseMove(pos) === jsjk.HANDLED) {
     event.preventDefault();
+  }
+};
+
+// Pointer lock
+
+jsjk.getPointerLock = function() {
+  return document.pointerLockElement !== undefined;
+};
+
+jsjk.setPointerLock = function(enable) {
+  if (enable) {
+    document.body.requestPointerLock();
+  } else {
+    document.body.exitPointerLock();
   }
 };
 
@@ -404,8 +429,13 @@ jsjk.Canvas = Class.extend({
   // Viewport
 
   adjustViewport: function(fullscreen, keepAspect, keepPixelRatio, centered) {
-    this.element.width = this.width;
-    this.element.height = this.height;
+    if (this.element.width !== this.width) {
+      this.element.width = this.width;
+    }
+
+    if (this.element.height !== this.height) {
+      this.element.height = this.height;
+    }
 
     if (fullscreen) {
       if (keepAspect) {
@@ -456,7 +486,12 @@ jsjk.Canvas2D = jsjk.Canvas.extend({
     this.createContext("2d");
 
     this.setStroke(0, 255);
+
     this.setFill(255, 255);
+
+    this.setFont("10px sans-serif");
+    this.setTextAlign("left");
+    this.setTextBaseline("top");
   },
 
   // Options/flags
@@ -467,6 +502,10 @@ jsjk.Canvas2D = jsjk.Canvas.extend({
     } else {
       this.element.classList.remove("jsjk_pixelated");
     }
+  },
+
+  setBlendOp: function(op) {
+    this.context.globalCompositeOperation = op;
   },
 
   // Matrix operations
@@ -656,3 +695,5 @@ window.onkeyup = jsjk._keyRelease;
 window.onmousedown = jsjk._mousePress;
 window.onmouseup = jsjk._mouseRelease;
 window.onmousemove = jsjk._mouseMove;
+window.pointerlockchange = jsjk.pointerLockChange;
+window.pointerlockerror = jsjk.pointerLockError;

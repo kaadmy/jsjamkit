@@ -33,7 +33,8 @@ with (jsjk) {
 
     canvas.setBackground(20, 20, 20);
 
-    canvas.setLineWidth(3);
+    canvas.setFont("10px monospace");
+    canvas.setTextBaseline("bottom");
 
     // Create SoundManager
 
@@ -51,7 +52,7 @@ with (jsjk) {
     assetManager.queueAsset(ASSET_IMAGE, "test/baboon", "images/baboon.png");
 
     assetManager.beginPreload(function() {
-      //assetPreloadComplete = true;
+      assetPreloadComplete = true;
     });
   };
 
@@ -74,14 +75,10 @@ with (jsjk) {
 
     // Loading progress
 
-    canvas.setFont("10px monospace");
-    canvas.setTextAlign("center");
-    canvas.setTextBaseline("bottom");
-
     canvas.drawText(
       "Loading " + Math.round(progress.fraction * 100) + "%",
-      Math.round(canvas.width / 2),
-      Math.round(canvas.height * 0.93)
+      3,
+      Math.round(canvas.height * 0.95) - 3
     );
   };
 
@@ -132,22 +129,19 @@ with (jsjk) {
     // Rect
 
     canvas.drawRect(130, 80, 130, 80);
+
+    // Text
+
+    canvas.setFill(150, 255, 150);
+
+    canvas.drawText("Left click to enable pointer lock", 120, 20);
   };
 
   // Callbacks
 
-  keyPress = function(code, name) {
-  };
-
-  keyRelease = function(code, name) {
-  };
-
   mousePress = function(button, pos) {
-  };
-
-  mouseRelease = function(button, pos) {
-  };
-
-  mouseMove = function(pos) {
+    if (button === MOUSE_LEFT) {
+      setPointerLock(true);
+    }
   };
 }
