@@ -138,7 +138,11 @@ jsjk._init = function() {
   addDebugLine("timing");
 
   jsjk._nextDebugUpdate = 0;
+};
 
+// Called after the main init callback is finished so you can have async loading
+
+jsjk.initComplete = function() {
   // Setup callbacks for mainloop(s)
 
   setInterval(jsjk._tick, 1000 / 60); // 60 frames per second
@@ -254,33 +258,62 @@ jsjk.AssetManager = Class.extend({
     this.assets = {};
 
     this.queue = [];
+    this.queueItems = 0;
   },
 
   // Loading
 
-  load: function(type, name, path) {
+  load: function(type, name, path, complete) {
+    jsjk.printInfo("[jsjk.AssetManager.load] Loading asset " + name + " from " + path);
+
     if (this.assets[name] !== undefined) {
-      jsjk.printWarning("[jsjk.AssetLoader.load] Tried to precache asset " + name + " but is already loaded");
+      jsjk.printWarning("[jsjk.AssetManager.load] Tried to load asset " + name + " but is already loaded");
       return;
     }
 
     this.assets[name] = {type: type};
 
     if (type === jsjk.ASSET_IMAGE) {
-      this.loadImage(name, path);
+      this.loadImage(name, path, complete);
     } else if (type === jsjk.ASSET_SOUND) {
-      this.loadSound(name, path); // Function does not exist yet; will add after other stuff is more complete
+      this.loadSound(name, path, complete); // Function does not exist yet; will add after other stuff is more complete
     } else {
-      jsjk.printError("[jsjk.AssetLoader.load] Unknown asset type " + type);
+      jsjk.printError("[jsjk.AssetManager.load] Unknown asset type " + type);
       delete this.assets[name];
     }
   },
 
-  loadImage: function(name, path) {
+  loadImage: function(name, path, complete) {
     this.assets[name].element = document.createElement("img");
     this.element.appendChild(this.assets[name].element);
 
     this.assets[name].element.src = path;
+
+    this.assets[name].element.onload = complete;
+  },
+
+  // Preloading
+
+  queueAsset: function(type, name, path) {
+    this.queue.push({type: type, name: name, path: path});
+    this.queueItems++;
+  },
+
+  beginPreload: function(complete) {
+    var items = this.queueItems; // Guarantee that the variable never changes due to async
+    var am = this;
+
+    for (var i = 0; i < items; i++) {
+      var last = this.queue.shift();
+
+      this.load(last.type, last.name, last.path, function() {
+        am.queueItems--;
+
+        if (am.queueItems <= 0 && complete !== undefined) {
+          complete();
+        }
+      });
+    }
   },
 
   // Getters
@@ -290,7 +323,7 @@ jsjk.AssetManager = Class.extend({
       return this.assets[name].type;
     }
 
-    jsjk.printWarning("[jsjk.AssetLoader.getType] Tried to get asset " + name + " but not loaded");
+    jsjk.printWarning("[jsjk.AssetManager.getType] Tried to get asset " + name + " but not loaded");
     return;
   },
 
@@ -304,7 +337,7 @@ jsjk.AssetManager = Class.extend({
       // The type is guaranteed to be valid as determined by jsjk.AssetManager.load
     }
 
-    jsjk.printWarning("[jsjk.AssetLoader.get] Tried to get asset " + name + " but not loaded");
+    jsjk.printWarning("[jsjk.AssetManager.get] Tried to get asset " + name + " but not loaded");
     return;
   },
 });

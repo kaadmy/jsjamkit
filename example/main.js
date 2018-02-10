@@ -28,18 +28,22 @@ with (jsjk) {
 
     canvas.setBackground(20, 20, 20);
 
-    // Create AssetManager
-
-    assetManager = new AssetManager();
-
-    assetManager.load(ASSET_IMAGE, "test/baboon", "images/baboon.png");
-
     // Create SoundManager
 
     channels[CHANNEL_MUSIC]     = new SoundChannel(assetManager, OVERLAP_RESET);
     channels[CHANNEL_PLAYER]    = new SoundChannel(assetManager, OVERLAP_NONE);
     channels[CHANNEL_SFX]       = new SoundChannel(assetManager, OVERLAP_RESET);
     channels[CHANNEL_ANNOUNCER] = new SoundChannel(assetManager, OVERLAP_QUEUE);
+
+    // Create AssetManager
+
+    assetManager = new AssetManager();
+
+    // Preload assets
+
+    assetManager.queueAsset(ASSET_IMAGE, "test/baboon", "images/baboon.png");
+
+    assetManager.beginPreload(jsjk.initComplete);
   };
 
   // Update functions
