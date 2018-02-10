@@ -42,6 +42,7 @@ jsjk.KEY_LEFT = 37;
 jsjk.KEY_UP = 38;
 jsjk.KEY_RIGHT = 39;
 jsjk.KEY_DOWN = 40;
+jsjk.KEY_SPACE = 32;
 
 jsjk.MOUSE_LEFT = 1;
 jsjk.MOUSE_MIDDLE = 2;
@@ -51,7 +52,7 @@ jsjk.AXIS_X = 0;
 jsjk.AXIS_Y = 1;
 
 jsjk.ASSET_IMAGE = 0;
-jsjk.ASSET_SOUND = 1;
+//jsjk.ASSET_JSON; ??? Should be added at some point
 
 jsjk.OVERLAP_NONE = 0; // Sounds will only play if the channel is currently inactive
 jsjk.OVERLAP_RESET = 1; // Only the last sound played will be active
@@ -77,11 +78,10 @@ jsjk._enableDebug = false;
 
 jsjk._cache = {
   assetsElem: null,
-  soundsElem: null,
+  soundElem: null,
   canvasesElem: null,
   debugElem: null,
 
-  sounds: [], // List of currently playing sounds
   debug: {},
 };
 
@@ -116,7 +116,7 @@ jsjk._init = function() {
 
   jsjk._cache.assetsElem = document.getElementById("jsjk_assets");
 
-  jsjk._cache.soundsElem = document.getElementById("jsjk_sounds");
+  jsjk._cache.soundElem = document.getElementById("jsjk_sound");
 
   jsjk._cache.canvasesElem = document.getElementById("jsjk_canvases");
   jsjk._cache.debugElem = document.getElementById("jsjk_debug");
@@ -299,8 +299,6 @@ jsjk.AssetManager = Class.extend({
 
     if (type === jsjk.ASSET_IMAGE) {
       this.loadImage(name, path, complete);
-    } else if (type === jsjk.ASSET_SOUND) {
-      this.loadSound(name, path, complete); // Function does not exist yet; will add after other stuff is more complete
     } else {
       jsjk.printError("Unknown asset type " + type);
       delete this.assets[name];
@@ -325,7 +323,7 @@ jsjk.AssetManager = Class.extend({
 
   beginPreload: function(complete) {
     var items = this.queueItems; // Guarantee that the variable never changes due to async
-    var am = this;
+    var that = this;
 
     this.queueStartItems = this.queueItems;
 
@@ -335,9 +333,9 @@ jsjk.AssetManager = Class.extend({
       this.queueLatestName = last.name;
 
       this.load(last.type, last.name, last.path, function() {
-        am.queueItems--;
+        that.queueItems--;
 
-        if (am.queueItems <= 0 && complete !== undefined) {
+        if (that.queueItems <= 0 && complete !== undefined) {
           complete();
         }
       });
@@ -363,7 +361,7 @@ jsjk.AssetManager = Class.extend({
     if (this.assets[name] !== undefined) {
       var type = this.assets[name].type;
 
-      if (type == jsjk.ASSET_IMAGE || type == jsjk.ASSET_SOUND) {
+      if (type == jsjk.ASSET_IMAGE) {
         return this.assets[name].element;
       } else {
         // The type is valid as determined by jsjk.AssetManager.load; exception JIC since this could be hard to debug
@@ -384,6 +382,76 @@ jsjk.SoundChannel = Class.extend({
     this.overlapMode = overlapMode;
 
     this.queue = [];
+
+    this.element = document.createElement("audio");
+    jsjk._cache.soundElem.appendChild(this.element);
+
+    var that = this; // Use ourselves instead of the element
+    this.element.onended = function() {
+      that.playing = false;
+      that._playNext(that);
+    };
+
+    this.playing = false;
+  },
+
+  // Play a sound
+
+  play: function(path, loop, volume, speed) {
+    loop = loop || false;
+    volume = volume || 1.0;
+    speed = speed || 1.0;
+
+    if (this.overlapMode === jsjk.OVERLAP_NONE) {
+      if (this.playing) {
+        return;
+      }
+    } else if (this.overlapMode === jsjk.OVERLAP_RESET) {
+      this.queueClear();
+    }
+
+    this.queue.push({path: path, loop: loop, volume: volume, speed: speed});
+
+    this._playNext(this);
+  },
+
+  // Stop currently playing sound
+
+  stop: function() {
+    // ??? Make this work
+  },
+
+  // Clears sound queue (only applies to OVERLAP_QUEUE), but does not stop playing the current sound
+
+  queueClear: function() {
+    this.queue = [];
+  },
+
+  // Force play sound ignoring any overlap mode or any state (don't call externally)
+
+  _forcePlay: function(path, loop, volume, speed) {
+    this.playing = true;
+
+    this.element.src = path;
+    this.element.loop = loop;
+    this.element.volume = volume;
+    this.element.playbackRate = speed;
+
+    this.element.play();
+  },
+
+  // Sound finish callback
+
+  _playNext: function(that) {
+    if (this.overlapMode === jsjk.OVERLAP_QUEUE && this.playing) {
+      return;
+    }
+
+    var next = this.queue.shift();
+
+    if (next !== undefined) {
+      this._forcePlay(next.path, next.loop, next.volume, next.speed);
+    }
   },
 });
 

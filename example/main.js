@@ -14,10 +14,10 @@ with (jsjk) {
 
   var channels = [];
 
-  var CHANNEL_MUSIC     = 0;
-  var CHANNEL_PLAYER    = 1;
-  var CHANNEL_SFX       = 2;
-  var CHANNEL_ANNOUNCER = 3;
+  var CHAN_MUSIC     = 0;
+  var CHAN_PLAYER    = 1;
+  var CHAN_SFX       = 2;
+  var CHAN_ANNOUNCER = 3;
 
   // Init function
 
@@ -38,10 +38,10 @@ with (jsjk) {
 
     // Create SoundManager
 
-    channels[CHANNEL_MUSIC]     = new SoundChannel(assetManager, OVERLAP_RESET);
-    channels[CHANNEL_PLAYER]    = new SoundChannel(assetManager, OVERLAP_NONE);
-    channels[CHANNEL_SFX]       = new SoundChannel(assetManager, OVERLAP_RESET);
-    channels[CHANNEL_ANNOUNCER] = new SoundChannel(assetManager, OVERLAP_QUEUE);
+    channels[CHAN_MUSIC]     = new SoundChannel(OVERLAP_RESET);
+    channels[CHAN_PLAYER]    = new SoundChannel(OVERLAP_NONE);
+    channels[CHAN_SFX]       = new SoundChannel(OVERLAP_RESET);
+    channels[CHAN_ANNOUNCER] = new SoundChannel(OVERLAP_QUEUE);
 
     // Create AssetManager
 
@@ -134,14 +134,24 @@ with (jsjk) {
 
     canvas.setFill(150, 255, 150);
 
-    canvas.drawText("Left click to enable pointer lock", 120, 20);
+    canvas.drawText("Middle click to enable pointer lock", 120, 20);
   };
 
   // Callbacks
 
-  mousePress = function(button, pos) {
-    if (button === MOUSE_LEFT) {
-      setPointerLock(true);
+  keyPress = function(code, name) {
+    if (code == KEY_SPACE) {
+      channels[CHAN_PLAYER].play("sound/teleport.ogg");
     }
+  };
+
+  mousePress = function(button, pos) {
+    if (button === MOUSE_MIDDLE) {
+      setPointerLock(true);
+    } else if (button === MOUSE_LEFT) {
+      channels[CHAN_SFX].play("sound/laser.ogg");
+    }
+
+    return HANDLED;
   };
 }
