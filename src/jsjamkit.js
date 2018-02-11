@@ -377,6 +377,9 @@ jsjk.AssetManager = Class.extend({
 
 // Class->SoundChannel
 
+// ??? Replace the current method of using <audio> tags with the web audio API
+// Any sound API should not be used until further notice
+
 jsjk.SoundChannel = Class.extend({
   init: function(overlapMode) {
     this.overlapMode = overlapMode;
