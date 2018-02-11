@@ -262,11 +262,11 @@ jsjk.getColorString = function(r, g, b, a) {
   if (g === undefined) { // Grayscale
     return "rgb(" + r + "," + r + "," + r + ")";
   } else if (b === undefined) { // Grayscale + alpha
-    return "rgba(" + r + "," + r + "," + r + "," + g + ")";
+    return "rgba(" + r + "," + r + "," + r + "," + (g / 255) + ")";
   } else if (a === undefined) { // RGB
     return "rgb(" + r + "," + g + "," + b + ")";
   } else { // Full RGBA
-    return "rgba(" + r + "," + g + "," + b + "," + a + ")";
+    return "rgba(" + r + "," + g + "," + b + "," + (a / 255) + ")";
   }
 };
 
@@ -462,7 +462,7 @@ jsjk.SoundChannel = Class.extend({
 
 jsjk.Canvas = Class.extend({
   init: function(width, height) {
-    this.width = width;
+    this.width = width; // Don't set these directly; use `resize` instead
     this.height = height;
 
     this.viewWidth = width;
@@ -476,6 +476,7 @@ jsjk.Canvas = Class.extend({
     this.element.classList.add("jsjk_canvas");
     this.setHidden(true);
 
+    this.resize();
     this.adjustViewport(false, false, false, false);
 
     // Define context but don't create it yet
@@ -499,7 +500,7 @@ jsjk.Canvas = Class.extend({
 
   // Viewport
 
-  adjustViewport: function(fullscreen, keepAspect, keepPixelRatio, centered) {
+  resize: function(width, height) {
     if (this.element.width !== this.width) {
       this.element.width = this.width;
     }
@@ -507,7 +508,9 @@ jsjk.Canvas = Class.extend({
     if (this.element.height !== this.height) {
       this.element.height = this.height;
     }
+  },
 
+  adjustViewport: function(fullscreen, keepAspect, keepPixelRatio, centered) {
     if (fullscreen) {
       if (keepAspect) {
         var fit = Math.max(1, Math.min(window.innerWidth / this.width, window.innerHeight / this.height));
@@ -562,7 +565,7 @@ jsjk.Canvas2D = jsjk.Canvas.extend({
 
     this.setFill(255, 255);
 
-    this.setFont("10px sans-serif");
+    this.setFont("sans-serif", 10);
     this.setTextAlign("left");
     this.setTextBaseline("top");
   },
@@ -579,6 +582,30 @@ jsjk.Canvas2D = jsjk.Canvas.extend({
 
   setBlendOp: function(op) {
     this.context.globalCompositeOperation = op;
+  },
+
+  // Pixel buffers
+
+  getPixelData: function(x, y, w, h) {
+    if (x === undefined) {
+      x = 0;
+      y = 0;
+      w = this.width;
+      h = this.height;
+    } else if (w === undefined) {
+      w = 1;
+      h = 1;
+    }
+
+    return this.context.getImageData(x, y, w, h);
+  },
+  setPixelData: function(data, x, y) {
+    if (x === undefined) {
+      x = 0;
+      y = 0;
+    }
+
+    this.context.putImageData(data, x, y);
   },
 
   // Matrix operations
@@ -668,8 +695,12 @@ jsjk.Canvas2D = jsjk.Canvas.extend({
 
   // Text
 
-  setFont: function(font) {
-    this.context.font = font;
+  setFont: function(font, size) {
+    if (size === undefined) { // Allow both forms of setting the exact font string or family and size separately
+      this.context.font = font;
+    } else {
+      this.context.font = size + "px " + font;
+    }
   },
 
   setTextAlign: function(align) {

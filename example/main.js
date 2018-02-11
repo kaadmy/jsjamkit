@@ -24,7 +24,7 @@ with (jsjk) {
 
     canvas.setBackground(20, 20, 20);
 
-    canvas.setFont("10px monospace");
+    canvas.setFont("monospace", 10);
     canvas.setTextBaseline("bottom");
 
     // Create AssetManager
@@ -86,37 +86,26 @@ with (jsjk) {
 
     canvas.clear();
 
-    // Draw image
+    // Get pixel data
 
-    canvas.pushMatrix();
+    var pixelData = canvas.getPixelData();
+    var pixels = pixelData.data;
 
-    canvas.translate(100, 20);
-    canvas.rotate(Math.PI * 0.2);
-    canvas.scale(0.2);
+    // Write pixel data
 
-    canvas.drawImage(assetManager.get("test/baboon"), 0, 0);
+    for (var x = 0; x < pixelData.width; x++) {
+      for (var y = 0; y < pixelData.height; y++) {
+        var pi = (x + (y * pixelData.width)) * 4;
+        pixels[pi] = (x * 16) % 255;
+        pixels[pi + 1] = (y * 16) % 255;
+        pixels[pi + 2] = (x + y) % 255;
+        pixels[pi + 3] = 255;
+      }
+    }
 
-    canvas.popMatrix();
+    // Set pixel data
 
-    // Line
-
-    canvas.setStroke(150, 255, 150);
-
-    canvas.drawLine(10, 10, 120, 80 + (Math.sin(getTime() * 2) * 20));
-
-    // Circle
-
-    canvas.setFill(50, 50, 50, 0.8);
-
-    canvas.drawCircle(50, 50, 40);
-
-    // Rect
-
-    canvas.drawRect(130, 80, 130, 80);
-
-    // Text
-
-    canvas.setFill(150, 255, 150);
+    canvas.setPixelData(pixelData);
   };
 
   // Callbacks
