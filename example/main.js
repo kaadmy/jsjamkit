@@ -10,15 +10,6 @@ with (jsjk) {
 
   var assetPreloadComplete = false;
 
-  // Sound
-
-  var channels = [];
-
-  var CHAN_MUSIC     = 0;
-  var CHAN_PLAYER    = 1;
-  var CHAN_SFX       = 2;
-  var CHAN_ANNOUNCER = 3;
-
   // Init function
 
   init = function() {
@@ -35,13 +26,6 @@ with (jsjk) {
 
     canvas.setFont("10px monospace");
     canvas.setTextBaseline("bottom");
-
-    // Create SoundManager
-
-    channels[CHAN_MUSIC]     = new SoundChannel(OVERLAP_RESET);
-    channels[CHAN_PLAYER]    = new SoundChannel(OVERLAP_NONE);
-    channels[CHAN_SFX]       = new SoundChannel(OVERLAP_RESET);
-    channels[CHAN_ANNOUNCER] = new SoundChannel(OVERLAP_QUEUE);
 
     // Create AssetManager
 
@@ -133,25 +117,10 @@ with (jsjk) {
     // Text
 
     canvas.setFill(150, 255, 150);
-
-    canvas.drawText("Middle click to enable pointer lock", 120, 20);
   };
 
   // Callbacks
 
   keyPress = function(code, name) {
-    if (code == KEY_SPACE) {
-      channels[CHAN_PLAYER].play("sound/teleport.ogg");
-    }
-  };
-
-  mousePress = function(button, pos) {
-    if (button === MOUSE_MIDDLE) {
-      setPointerLock(true);
-    } else if (button === MOUSE_LEFT) {
-      channels[CHAN_SFX].play("sound/laser.ogg");
-    }
-
-    return HANDLED;
   };
 }
