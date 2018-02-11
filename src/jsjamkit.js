@@ -113,8 +113,8 @@ jsjk.lerp = function(start, end, ratio) {
   return start + ((end - start) * ratio);
 };
 
-jsjk.map = function(num, low1, high1, low2, high2) {
-  return low2 + (high2 - low2) * ((num - low1) / (high1 - low1));
+jsjk.map = function(num, start1, end1, start2, end2) {
+  return start2 + (end2 - start2) * ((num - start1) / (end1 - start1));
 };
 
 // Internal callbacks
@@ -127,10 +127,9 @@ jsjk._init = function() {
 
   // Init
 
-  jsjk._startTime = jsjk._getTime();
+  jsjk._startTime = jsjk._getSeconds();
 
-  jsjk._lastTick = jsjk._getTime();
-  jsjk._lastDraw = jsjk._getTime();
+  jsjk._lastTick = jsjk._getSeconds();
 
   jsjk.init();
 
@@ -146,20 +145,18 @@ jsjk._init = function() {
   };
 
   addDebugLine("tickTiming");
-  addDebugLine("drawTiming");
 
   jsjk._nextDebugUpdate = 0;
 
   // Setup callbacks for mainloop(s)
 
   setInterval(jsjk._tick, 1000 / 60); // 60 frames per second
-  requestAnimationFrame(jsjk._draw); // Variable but typically 60 fps; pauses when the tab is inactive
 };
 
 jsjk._tick = function() {
-  var delta = jsjk._getTime() - jsjk._lastTick;
+  jsjk._tickDelta = jsjk._getSeconds() - jsjk._lastTick;
 
-  jsjk._lastTick = jsjk._getTime();
+  jsjk._lastTick = jsjk._getSeconds();
 
   // Debugging info
 
@@ -171,40 +168,14 @@ jsjk._tick = function() {
     if (jsjk._lastTick > jsjk._nextDebugUpdate) {
       jsjk._nextDebugUpdate = jsjk._lastTick + 0.2;
 
-      jsjk._cache.debug.tickTiming.textContent = "FPS: " + Math.floor(1.0 / delta);
+      jsjk._cache.debug.tickTiming.textContent = "FPS: " + Math.floor(1.0 / jsjk._tickDelta);
     }
   }
 
   // Main callback
 
-  jsjk.tick(delta);
+  jsjk.tick(jsjk._tickDelta);
 };
-
-jsjk._draw = function(time) {
-  var delta = jsjk._getTime() - jsjk._lastDraw;
-
-  jsjk._lastDraw = jsjk._getTime();
-
-  // Debugging info
-
-  for (var name in jsjk._cache.debug) {
-    jsjk._cache.debug[name].hidden = !jsjk._enableDebug;
-  }
-
-  if (jsjk._enableDebug) {
-    if (jsjk._lastDraw > jsjk._nextDebugUpdate) {
-      jsjk._nextDebugUpdate = jsjk._lastDraw + 0.2;
-
-      jsjk._cache.debug.drawTiming.textContent = "Draw FPS: " + Math.floor(1.0 / delta);
-    }
-  }
-
-  jsjk.draw(delta);
-
-  requestAnimationFrame(jsjk._draw);
-};
-
-// Event callbacks
 
 jsjk._keyPress = function(event) {
   //jsjk.printDebug("Key press: " + event.which + ", " + event.key);
@@ -272,12 +243,16 @@ jsjk.setPointerLock = function(enable) {
 
 // Timing
 
-jsjk._getTime = function() {
-  return new Date().getTime() / 1000;
+jsjk._getSeconds = function() {
+  return jsjk.getMillis() / 1000;
 };
 
-jsjk.getTime = function() {
-  return jsjk._getTime() - jsjk._startTime;
+jsjk.getSeconds = function() {
+  return jsjk._getSeconds() - jsjk._startTime;
+};
+
+jsjk.getMillis = function() {
+  return new Date().getTime();
 };
 
 // Color

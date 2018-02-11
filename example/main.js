@@ -33,7 +33,7 @@ with (jsjk) {
 
     // Preload assets
 
-    assetManager.queueAsset(ASSET_IMAGE, "images/baboon", "images/baboon.png");
+    assetManager.queueAsset(ASSET_IMAGE, "images/baboon", "images/baboon_small.png");
 
     assetManager.beginPreload(function() {
       assetPreloadComplete = true;
@@ -57,10 +57,11 @@ with (jsjk) {
       eb = temp;
     }
 
-    var texRes = Math.floor(image.width / (ex - sx));
+    var texRes = Math.max(1, Math.floor(image.width / (ex - sx))) / res;
+    var e = 1 / (ex - sx);
 
     for (var x = sx; x < ex; x += res) {
-      var ratio = (x - sx) / (ex - sx);
+      var ratio = (x - sx) * e;
 
       var y = Math.floor(lerp(st, et, ratio));
       var height = Math.ceil(lerp(sb, eb, ratio) - y);
@@ -97,12 +98,9 @@ with (jsjk) {
     );
   };
 
-  // Update functions
+  // Update function
 
   tick = function(delta) {
-  };
-
-  draw = function(delta) {
     // Adjust viewport position and scaling to be nice and pixelly
 
     canvas.adjustViewport(true, true, true, true);
@@ -121,21 +119,9 @@ with (jsjk) {
 
     var img = assetManager.get("images/baboon");
 
-    for (var i = 0; i < 20; i++) {
-      drawWall(canvas, img, 10, 10, 90, 50, 30, 70, 2);
+    for (var i = 0; i < 50; i++) {
+      drawWall(canvas, img, 10, 10, 90, 150, 30, 70, 2);
     }
-
-    // Image reference
-
-    canvas.drawImage(img, 10, 90, 80, 80);
-
-    // Image border
-
-    canvas.setFill();
-    canvas.setStroke(255);
-
-    canvas.drawRect(10, 10, 80, 80);
-    canvas.drawRect(10, 90, 80, 80);
   };
 
   // Callbacks
