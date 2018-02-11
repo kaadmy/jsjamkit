@@ -77,15 +77,13 @@ jsjk._enableDebug = false;
 // Runtime data cache
 
 jsjk._cache = {
-  assetsElem: null,
-  soundElem: null,
-  canvasesElem: null,
-  debugElem: null,
+  elements: null,
 
+  debugElem: null,
   debug: {},
 };
 
-// Utility functions
+// String/printing functions
 
 jsjk.stringifyVector = function(vec) { // ??? Should we support arbitrary length vectors?
   return "[" + vec[jsjk.AXIS_X] + ":" + vec[jsjk.AXIS_Y] + "]";
@@ -109,23 +107,30 @@ jsjk.printError = function(string) {
   console.error(string);
 };
 
+// Utility functions
+
+jsjk.lerp = function(start, end, ratio) {
+  return start + ((end - start) * ratio);
+};
+
+jsjk.map = function(num, low1, high1, low2, high2) {
+  return low2 + (high2 - low2) * ((num - low1) / (high1 - low1));
+};
+
 // Internal callbacks
 
 jsjk._init = function() {
   // Get container elements
 
-  jsjk._cache.assetsElem = document.getElementById("jsjk_assets");
-
-  jsjk._cache.soundElem = document.getElementById("jsjk_sound");
-
-  jsjk._cache.canvasesElem = document.getElementById("jsjk_canvases");
+  jsjk._cache.elements = document.getElementById("jsjk_elements");
   jsjk._cache.debugElem = document.getElementById("jsjk_debug");
 
   // Init
 
   jsjk._startTime = jsjk._getTime();
-  jsjk._lastFrame = jsjk._getTime();
-  jsjk._delta = 0.0001; // Can't be zero in case of divide by zero
+
+  jsjk._lastTick = jsjk._getTime();
+  jsjk._lastDraw = jsjk._getTime();
 
   jsjk.init();
 
@@ -140,7 +145,8 @@ jsjk._init = function() {
     jsjk._cache.debug[name].hidden = true;
   };
 
-  addDebugLine("timing");
+  addDebugLine("tickTiming");
+  addDebugLine("drawTiming");
 
   jsjk._nextDebugUpdate = 0;
 
@@ -151,9 +157,9 @@ jsjk._init = function() {
 };
 
 jsjk._tick = function() {
-  jsjk._delta = jsjk._getTime() - jsjk._lastFrame;
+  var delta = jsjk._getTime() - jsjk._lastTick;
 
-  jsjk._lastFrame = jsjk._getTime();
+  jsjk._lastTick = jsjk._getTime();
 
   // Debugging info
 
@@ -162,20 +168,38 @@ jsjk._tick = function() {
   }
 
   if (jsjk._enableDebug) {
-    if (jsjk._lastFrame > jsjk._nextDebugUpdate) {
-      jsjk._nextDebugUpdate = jsjk._lastFrame + 0.5;
+    if (jsjk._lastTick > jsjk._nextDebugUpdate) {
+      jsjk._nextDebugUpdate = jsjk._lastTick + 0.2;
 
-      jsjk._cache.debug.timing.textContent = "FPS: " + Math.floor(1.0 / jsjk._delta);
+      jsjk._cache.debug.tickTiming.textContent = "FPS: " + Math.floor(1.0 / delta);
     }
   }
 
   // Main callback
 
-  jsjk.tick(jsjk._delta);
+  jsjk.tick(delta);
 };
 
 jsjk._draw = function(time) {
-  jsjk.draw(jsjk._delta);
+  var delta = jsjk._getTime() - jsjk._lastDraw;
+
+  jsjk._lastDraw = jsjk._getTime();
+
+  // Debugging info
+
+  for (var name in jsjk._cache.debug) {
+    jsjk._cache.debug[name].hidden = !jsjk._enableDebug;
+  }
+
+  if (jsjk._enableDebug) {
+    if (jsjk._lastDraw > jsjk._nextDebugUpdate) {
+      jsjk._nextDebugUpdate = jsjk._lastDraw + 0.2;
+
+      jsjk._cache.debug.drawTiming.textContent = "Draw FPS: " + Math.floor(1.0 / delta);
+    }
+  }
+
+  jsjk.draw(delta);
 
   requestAnimationFrame(jsjk._draw);
 };
@@ -274,7 +298,7 @@ jsjk.getColorString = function(r, g, b, a) {
 
 jsjk.AssetManager = Class.extend({
   init: function() {
-    this.element = jsjk._cache.assetsElem;
+    this.element = jsjk._cache.elements;
 
     this.assets = {};
 
@@ -307,9 +331,11 @@ jsjk.AssetManager = Class.extend({
 
   loadImage: function(name, path, complete) {
     this.assets[name].element = document.createElement("img");
-    this.element.appendChild(this.assets[name].element);
+    //this.element.appendChild(this.assets[name].element);
 
     this.assets[name].element.src = path;
+
+    var that = this;
 
     this.assets[name].element.onload = complete;
   },
@@ -387,7 +413,7 @@ jsjk.SoundChannel = Class.extend({
     this.queue = [];
 
     this.element = document.createElement("audio");
-    jsjk._cache.soundElem.appendChild(this.element);
+    //jsjk._cache.elements.appendChild(this.element);
 
     var that = this; // Use ourselves instead of the element
     this.element.onended = function() {
@@ -465,13 +491,18 @@ jsjk.Canvas = Class.extend({
     this.width = width; // Don't set these directly; use `resize` instead
     this.height = height;
 
+    // View coordinates
+
+    this.viewX = 0;
+    this.viewY = 0;
+
     this.viewWidth = width;
     this.viewHeight = height;
 
     // Create element
 
     this.element = document.createElement("canvas");
-    jsjk._cache.canvasesElem.appendChild(this.element);
+    jsjk._cache.elements.appendChild(this.element);
 
     this.element.classList.add("jsjk_canvas");
     this.setHidden(true);
@@ -542,13 +573,23 @@ jsjk.Canvas = Class.extend({
     }
 
     if (centered) {
-      this.element.style.left = ((window.innerWidth / 2) - (this.viewWidth / 2)) + "px";
-      this.element.style.top = ((window.innerHeight / 2) - (this.viewHeight / 2)) + "px";
+      this.viewX = ((window.innerWidth / 2) - (this.viewWidth / 2));
+      this.viewY = ((window.innerHeight / 2) - (this.viewHeight / 2));
+
+      this.element.style.left = this.viewX + "px";
+      this.element.style.top = this.viewY + "px";
     } else {
+      this.viewX = 0;
+      this.viewY = 0;
+
       this.element.style.left = "";
       this.element.style.top = "";
     }
-  }
+  },
+
+  toLocalCoords: function(x, y) {
+    return [x, y]; // ??? Make this actually work
+  },
 });
 
 // Class->Canvas->Canvas2D
@@ -735,8 +776,6 @@ jsjk.Canvas2D = jsjk.Canvas.extend({
   drawLine: function(sx, sy, ex, ey) {
     this.beginShape();
 
-    this.context.lineWidth = this.lineWidth;
-
     this.context.moveTo(sx, sy);
     this.context.lineTo(ex, ey);
 
@@ -744,7 +783,7 @@ jsjk.Canvas2D = jsjk.Canvas.extend({
   },
 
   drawRect: function(x, y, w, h) { // ??? Add drawRoundedRect
-    this.context.lineWidth = this.lineWidth;
+    this.beginShape();
 
     this.context.rect(x, y, w, h);
 
@@ -753,8 +792,6 @@ jsjk.Canvas2D = jsjk.Canvas.extend({
 
   drawArc: function(x, y, radius, sr, er, cc, close) {
     this.beginShape();
-
-    this.context.lineWidth = this.lineWidth;
 
     this.context.arc(x, y, radius, sr, er, cc);
 

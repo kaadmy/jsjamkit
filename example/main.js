@@ -33,11 +33,42 @@ with (jsjk) {
 
     // Preload assets
 
-    assetManager.queueAsset(ASSET_IMAGE, "test/baboon", "images/baboon.png");
+    assetManager.queueAsset(ASSET_IMAGE, "images/baboon", "images/baboon.png");
 
     assetManager.beginPreload(function() {
       assetPreloadComplete = true;
     });
+  };
+
+  var drawWall = function(canvas, image, sx, st, sb, ex, et, eb, res) {
+    if (ex < sx) { // Swap start and end for right-to-left walls
+      var temp;
+
+      temp = sx;
+      sx = ex;
+      ex = temp;
+
+      temp = st;
+      st = et;
+      et = temp;
+
+      temp = sb;
+      sb = eb;
+      eb = temp;
+    }
+
+    var texRes = Math.floor(image.width / (ex - sx));
+
+    for (var x = sx; x < ex; x += res) {
+      var ratio = (x - sx) / (ex - sx);
+
+      var y = Math.floor(lerp(st, et, ratio));
+      var height = Math.ceil(lerp(sb, eb, ratio) - y);
+
+      var texX = Math.floor(lerp(0, image.width, ratio));
+
+      canvas.drawImage(image, texX, 0, texRes, image.height, x, y, res, height);
+    }
   };
 
   // Loading
@@ -86,26 +117,25 @@ with (jsjk) {
 
     canvas.clear();
 
-    // Get pixel data
+    // Draw some stuff
 
-    var pixelData = canvas.getPixelData();
-    var pixels = pixelData.data;
+    var img = assetManager.get("images/baboon");
 
-    // Write pixel data
-
-    for (var x = 0; x < pixelData.width; x++) {
-      for (var y = 0; y < pixelData.height; y++) {
-        var pi = (x + (y * pixelData.width)) * 4;
-        pixels[pi] = (x * 16) % 255;
-        pixels[pi + 1] = (y * 16) % 255;
-        pixels[pi + 2] = (x + y) % 255;
-        pixels[pi + 3] = 255;
-      }
+    for (var i = 0; i < 20; i++) {
+      drawWall(canvas, img, 10, 10, 90, 50, 30, 70, 2);
     }
 
-    // Set pixel data
+    // Image reference
 
-    canvas.setPixelData(pixelData);
+    canvas.drawImage(img, 10, 90, 80, 80);
+
+    // Image border
+
+    canvas.setFill();
+    canvas.setStroke(255);
+
+    canvas.drawRect(10, 10, 80, 80);
+    canvas.drawRect(10, 90, 80, 80);
   };
 
   // Callbacks
